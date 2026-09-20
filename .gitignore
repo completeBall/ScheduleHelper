@@ -1,0 +1,8 @@
+desktop/build/
+desktop/vendor/
+dist/
+tests/*-final*/
+tests/*-preview.png
+tests/*.xlsx
+*.user
+*.log.tmp
