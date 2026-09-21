@@ -7,6 +7,9 @@ Item {
     id: panel
     objectName: "todayTasksPanel"
     property bool expanded: false
+    property bool compact: false
+    property int expandedWidth: 390
+    property int expandedHeight: 520
     property var now: new Date()
     readonly property var tasks: {
         const revision = app.schedule.revision
@@ -21,8 +24,8 @@ Item {
         {kind: "memo", title: "备忘录", color: Theme.memoColor}
     ]
 
-    width: expanded ? Math.min(390, parent.width - 36) : 174
-    height: expanded ? Math.min(520, parent.height - 36) : 48
+    width: expanded ? expandedWidth : (compact ? 48 : Math.min(200, parent.width))
+    height: expanded ? expandedHeight : 48
     z: 90
 
     function countdown(target) {
@@ -47,33 +50,43 @@ Item {
         border.width: 1
     }
 
-    ColumnLayout {
+    Item {
         anchors.fill: parent
-        spacing: 0
 
         Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 48
+            id: header
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            height: 48
             radius: Theme.radiusLg
-            color: Theme.primarySoft
+            color: panel.expanded ? Theme.primarySoft : Theme.sidebarActive
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 14
                 anchors.rightMargin: 14
                 spacing: 8
+                FluentIcon {
+                    visible: !panel.expanded
+                    glyph: Theme.icon.bell
+                    size: 18
+                    color: Theme.sidebarTextActive
+                }
                 Text {
-                    text: "今日任务 · " + panel.tasks.length
+                    visible: panel.expanded || !panel.compact
+                    text: panel.expanded ? "今日任务 · " + panel.tasks.length : "今日任务 " + panel.tasks.length
                     font.family: Theme.fontUi
                     font.pixelSize: Theme.textMd
                     font.bold: true
-                    color: Theme.text
+                    color: panel.expanded ? Theme.text : Theme.sidebarTextActive
                 }
                 Item { Layout.fillWidth: true }
                 Text {
-                    text: panel.expanded ? "收起⌄" : "展开⌃"
+                    visible: panel.expanded || !panel.compact
+                    text: panel.expanded ? "收起⌄" : "⌃"
                     font.family: Theme.fontUi
                     font.pixelSize: Theme.textSm
-                    color: Theme.primary
+                    color: panel.expanded ? Theme.primary : Theme.sidebarTextActive
                 }
             }
             MouseArea {
@@ -84,8 +97,10 @@ Item {
         }
 
         ScrollView {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: header.bottom
+            anchors.bottom: parent.bottom
             visible: panel.expanded
             clip: true
             contentWidth: availableWidth

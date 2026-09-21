@@ -47,6 +47,7 @@ ApplicationWindow {
             Layout.fillHeight: true
             Layout.preferredWidth: win.compact ? 76 : 224
             color: Theme.sidebar
+            z: 2
 
             ColumnLayout {
                 anchors.fill: parent
@@ -141,11 +142,33 @@ ApplicationWindow {
                     onClicked: app.updater.install()
                 }
 
-                NavButton {
+                Item {
                     Layout.fillWidth: true
+                    Layout.preferredHeight: 48
+                    TodayTasksPanel {
+                        id: taskPanel
+                        compact: win.compact
+                        expandedWidth: Math.min(390, win.width - 36)
+                        expandedHeight: Math.min(520, win.height - 36)
+                        anchors.left: parent.left
+                        anchors.bottom: taskButton.top
+                        visible: expanded
+                    }
+                    NavButton {
+                        id: taskButton
+                        anchors.fill: parent
+                        text: "今日任务 · " + taskPanel.tasks.length
+                        glyph: Theme.icon.bell
+                        compact: win.compact
+                        active: taskPanel.expanded
+                        onClicked: taskPanel.expanded = !taskPanel.expanded
+                    }
+                }
+                NavButton {
+                    Layout.preferredWidth: 44
                     text: "设置与说明"
                     glyph: Theme.icon.settings
-                    compact: win.compact
+                    compact: true
                     onClicked: settingsDialog.open()
                 }
             }
@@ -169,11 +192,6 @@ ApplicationWindow {
             SchedulePage {
                 anchors.fill: parent
                 visible: app.page === 1
-            }
-            TodayTasksPanel {
-                anchors.left: parent.left
-                anchors.bottom: parent.bottom
-                anchors.margins: 18
             }
         }
     }

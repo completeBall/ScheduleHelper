@@ -1,5 +1,6 @@
 @echo off
 rem Build (Release) and assemble a self-contained folder: qt\dist\GdipuActivityHelper
+rem Use "deploy.cmd release" for an isolated qt\dist-release\GdipuActivityHelper folder.
 rem The folder can be zipped and copied to any Windows 10/11 x64 machine (no Qt or VS install needed).
 setlocal
 call "%~dp0build.cmd" || exit /b 1
@@ -12,6 +13,7 @@ if not defined QT if exist "C:\Qt\6.8.3\msvc2022_64" set "QT=C:\Qt\6.8.3\msvc202
 if not defined VS exit /b 1
 if not defined QT exit /b 1
 set "OUT=%~dp0dist\GdipuActivityHelper"
+if /I "%1"=="release" set "OUT=%~dp0dist-release\GdipuActivityHelper"
 set "CRT="
 for /d %%D in ("%VS%\VC\Redist\MSVC\*") do if exist "%%~fD\x64\Microsoft.VC143.CRT" set "CRT=%%~fD\x64\Microsoft.VC143.CRT"
 if not defined CRT (

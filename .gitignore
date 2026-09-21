@@ -1,6 +1,7 @@
 # ---- Qt 版（qt/）构建与打包产物 ----
 qt/build/
 qt/dist/
+qt/dist-release/
 build/
 dist/
 CMakeUserPresets.json
