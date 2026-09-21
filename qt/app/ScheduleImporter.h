@@ -6,7 +6,7 @@
 #include <QObject>
 
 // Imports the personal timetable from the academic system through the embedded
-// browser. Direct port of MainForm.ImportSchedule / ReadAcademic (Schedule.cs),
+// browser,
 // including the rules that never overwrite a good timetable with a bad one.
 class ScheduleImporter : public QObject
 {

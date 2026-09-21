@@ -5,7 +5,7 @@
 class QQuickWindow;
 
 // --self-test <dir>: drives the real UI + embedded browser against the mock school
-// site (node server.mjs) and checks the same things the C# build's self-test did.
+// site (node server.mjs) to verify activity and timetable workflows.
 // Writes <dir>/result.json and <dir>/self-test.log; returns via QCoreApplication::exit.
 void runSelfTest(AppController &app, QQuickWindow *window);
 

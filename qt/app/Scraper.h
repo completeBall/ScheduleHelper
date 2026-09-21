@@ -10,7 +10,7 @@
 struct TimeoutFailure : Failure {};
 
 // Collects every "未开始" activity from the school portal through the embedded
-// browser. Direct port of MainForm.CollectClicked and its helpers (App.cs).
+// browser.
 class Scraper : public QObject
 {
     Q_OBJECT

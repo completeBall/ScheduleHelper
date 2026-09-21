@@ -17,8 +17,8 @@ struct Failure {
 //
 // QML forwards `runScript` to view.runJavaScript() and reports results and
 // load events back. The blocking helpers below spin a nested event loop so the
-// collection logic can be written as straight-line code (a direct port of the
-// async/await flow in the C# build) while the UI stays responsive.
+// collection logic can be written as straight-line code
+// while the UI stays responsive.
 class WebBridge : public QObject
 {
     Q_OBJECT

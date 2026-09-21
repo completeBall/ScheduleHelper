@@ -8,8 +8,8 @@
 
 namespace Campus {
 
-// %LOCALAPPDATA%\GdipuActivityHelper — same folder as the C# build so cached
-// results and the timetable carry over. Override with GDIPU_DATA_DIR.
+// %LOCALAPPDATA%\GdipuActivityHelper — persistent storage for cached
+// results and the timetable. Override with GDIPU_DATA_DIR.
 QString dataDirectory();
 
 bool writeJsonAtomically(const QString &path, const QJsonDocument &doc, QString *error = nullptr);

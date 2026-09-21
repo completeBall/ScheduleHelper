@@ -9,8 +9,8 @@
 
 namespace Campus {
 
-// One scraped activity. Field names mirror the JSON written by the original
-// C# build so existing last-results.json files load unchanged.
+// One scraped activity. Field names match the persisted JSON format;
+// existing last-results.json files load unchanged.
 struct Activity {
     QString id;
     QString name;
