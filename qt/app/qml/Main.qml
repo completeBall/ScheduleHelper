@@ -170,6 +170,11 @@ ApplicationWindow {
                 anchors.fill: parent
                 visible: app.page === 1
             }
+            TodayTasksPanel {
+                anchors.left: parent.left
+                anchors.bottom: parent.bottom
+                anchors.margins: 18
+            }
         }
     }
 

@@ -159,7 +159,7 @@ AppController::AppController(const AppOptions &options, QObject *parent)
             m_tray->show();
             emit trayAvailableChanged();
         }
-        m_clock.setInterval(60 * 1000);
+        m_clock.setInterval(1000);
         connect(&m_clock, &QTimer::timeout, this, &AppController::checkTimers);
         m_clock.start();
         QTimer::singleShot(1000, this, &AppController::checkTimers);
@@ -267,33 +267,19 @@ void AppController::checkDesktopReminders()
     if (!m_desktopReminders || !m_tray || !m_schedule->hasAnchor()) return;
     const QDateTime now = nowInBeijing();
     const QDate date = now.date();
-    const QDate monday = QDate::fromString(m_schedule->weekOneMonday(), Qt::ISODate);
-    if (!monday.isValid() || date < monday) return;
-    const int week = int(monday.daysTo(date)) / 7 + 1;
-    const int day = date.dayOfWeek();
-    if (week < 1 || week > 40) return;
     QStringList tasks;
-    const auto due = [&](const QString &key, const QDateTime &when) {
-        if (!when.isValid() || when > now || when.secsTo(now) > 90 || m_notified.contains(key)) return false;
+    for (const QVariant &item : m_schedule->tasksForDate(date.toString(Qt::ISODate))) {
+        const QVariantMap task = item.toMap();
+        const QDateTime when = QDateTime::fromString(task.value(QStringLiteral("target")).toString(), Qt::ISODate);
+        const QString kind = task.value(QStringLiteral("kind")).toString();
+        const QString title = task.value(QStringLiteral("title")).toString();
+        const QString key = kind + QLatin1Char('/') + title + QLatin1Char('/') + task.value(QStringLiteral("target")).toString();
+        if (!when.isValid() || when > now || when.secsTo(now) > 90 || m_notified.contains(key)) continue;
         m_notified.insert(key);
-        return true;
-    };
-    const auto &blocks = periods();
-    for (int block = 0; block < blocks.size(); ++block) {
-        const QTime start = QTime::fromString(blocks.at(block).time.left(5), QStringLiteral("HH:mm"));
-        const QDateTime when(date, start, beijing());
-        if (!start.isValid() || !due(date.toString(Qt::ISODate) + QStringLiteral("/slot/") + QString::number(block), when)) continue;
-        for (const Course &course : m_schedule->data().allCourses())
-            if (course.day == day && course.inWeek(week) && course.inBlock(block)) tasks << QStringLiteral("课程：") + course.name;
-        const QString note = m_schedule->memo(week, day, block);
-        if (!note.isEmpty()) tasks << QStringLiteral("备忘录：") + note;
-    }
-    for (const Activity &activity : m_activities->reminderActivities()) {
-        const bool claimed = m_activities->isClaimed(activity);
-        const QString timeText = claimed ? activity.activityTime : activity.registration;
-        const QDateTime when = parseTimestamp(timeText);
-        const QString key = date.toString(Qt::ISODate) + QLatin1Char('/') + ActivityModel::activityKey(activity);
-        if (due(key, when)) tasks << (claimed ? QStringLiteral("活动：") : QStringLiteral("报名：")) + activity.name;
+        const QString label = kind == QLatin1String("course") ? QStringLiteral("课程：")
+            : kind == QLatin1String("registration") ? QStringLiteral("报名：")
+            : kind == QLatin1String("event") ? QStringLiteral("活动：") : QStringLiteral("备忘录：");
+        tasks << label + title;
     }
     if (!tasks.isEmpty()) m_tray->showMessage(QStringLiteral("当前时间段任务"), tasks.join(QLatin1Char('\n')), QSystemTrayIcon::Information, 12000);
     if (m_notified.size() > 500) m_notified.clear();
@@ -312,7 +298,7 @@ QString AppController::defaultExportName() const
 
 QString AppController::dateToday() const
 {
-    return QDate::currentDate().toString(QStringLiteral("yyyy-MM-dd"));
+    return nowInBeijing().date().toString(QStringLiteral("yyyy-MM-dd"));
 }
 
 void AppController::openSchool()

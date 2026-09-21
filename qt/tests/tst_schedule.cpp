@@ -21,6 +21,10 @@ private slots:
         QCOMPARE(cards[0].toMap()["kind"].toString(), QString("empty"));
         QCOMPARE(cards[0].toMap()["registrationCount"].toInt(), 2);
         QCOMPARE(cards[0].toMap()["eventCount"].toInt(), 0);
+        model.setActivityReminderMode(1);
+        QCOMPARE(model.cards(1, 0)[0].toMap()["registrationCount"].toInt(), 2);
+        QCOMPARE(model.cards(1, 0)[0].toMap()["eventCount"].toInt(), 2);
+        model.setActivityReminderMode(0);
         QVERIFY(model.addManualCourse("Math", "", "", 1, 0, "3").isEmpty());
         cards = model.cards(1, 0);
         QCOMPARE(cards.size(), 1); // no standalone reminders below the course
@@ -33,6 +37,9 @@ private slots:
         QCOMPARE(model.cards(1, 0)[0].toMap()["registrationCount"].toInt(), 2);
         activities.setClaimed(ActivityModel::activityKey(a), true);
         QVERIFY(model.setMemo(3, 1, 0, QStringLiteral("带好资料\n提前到场")).isEmpty());
+        QVERIFY(model.setMemoAt(3, 1, 0, QStringLiteral("带好资料\n提前到场"), QStringLiteral("09:12:34")).isEmpty());
+        QCOMPARE(model.memoTime(3, 1, 0), QStringLiteral("09:12:34"));
+        QVERIFY(!model.setMemoAt(3, 1, 0, QStringLiteral("越界"), QStringLiteral("13:00:00")).isEmpty());
         QVERIFY(model.cards(1, 0)[0].toMap()["hasMemo"].toBool());
         activities.setRows({}); // a daily activity refresh must not touch user memos
         QCOMPARE(model.memo(3, 1, 0), QStringLiteral("带好资料\n提前到场"));
@@ -57,6 +64,7 @@ private slots:
         reloaded.setStoragePath(dir.filePath("timetable.json"));
         QVERIFY(reloaded.load());
         QCOMPARE(reloaded.memo(3, 7, 5), QString("memo only"));
+        QCOMPARE(reloaded.memoTime(3, 1, 0), QStringLiteral("09:12:34"));
         QVERIFY(reloaded.setMemo(3, 7, 5, " ").isEmpty());
         QVERIFY(reloaded.cards(7, 5).isEmpty());
         QVERIFY(!reloaded.setMemo(0, 1, 0, "invalid").isEmpty());
@@ -98,6 +106,43 @@ private slots:
         activities.setDetectedRegistration(key, true);
         activities.setDetectedRegistration(key, false);
         QVERIFY(activities.isClaimed(a)); // a failed or cancelled auto check must preserve a manual mark
+    }
+    void previewModeAndExactMemoTimeSurviveImport() {
+        QTemporaryDir dir;
+        ActivityModel activities;
+        ScheduleModel model(&activities);
+        model.setStoragePath(dir.filePath("timetable.json"));
+        QVERIFY(model.setAnchor(3, 1, "2026-09-21").isEmpty());
+        Campus::Activity activity;
+        activity.name = QStringLiteral("公开活动");
+        activity.registration = "2026/09/21 08:45 - 2026/09/21 09:00";
+        activity.activityTime = "2026/09/21 09:15 - 2026/09/21 09:40";
+        activities.setRows({activity});
+        QCOMPARE(model.tasksForDate("2026-09-21").size(), 1);
+        model.setActivityReminderMode(1);
+        QCOMPARE(model.cards(1, 0)[0].toMap()["registrationCount"].toInt(), 1);
+        QCOMPARE(model.cards(1, 0)[0].toMap()["eventCount"].toInt(), 1);
+        QVERIFY(model.setMemoAt(3, 1, 0, QStringLiteral("准备材料"), QStringLiteral("09:12:34")).isEmpty());
+        const auto tasks = model.tasksForDate("2026-09-21");
+        QCOMPARE(tasks.size(), 3);
+        bool foundMemo = false;
+        for (const QVariant &task : tasks) {
+            const QVariantMap item = task.toMap();
+            if (item.value("kind") == QLatin1String("memo")) {
+                foundMemo = true;
+                QCOMPARE(item.value("time").toString(), QStringLiteral("09:12:34"));
+                QVERIFY(item.value("target").toString().endsWith(QStringLiteral("+08:00")));
+            }
+        }
+        QVERIFY(foundMemo);
+        model.applyImport(Campus::Schedule{});
+        QCOMPARE(model.activityReminderMode(), 1);
+        QCOMPARE(model.memoTime(3, 1, 0), QStringLiteral("09:12:34"));
+        ScheduleModel restored(&activities);
+        restored.setStoragePath(dir.filePath("timetable.json"));
+        QVERIFY(restored.load());
+        QCOMPARE(restored.activityReminderMode(), 1);
+        QCOMPARE(restored.memo(3, 1, 0), QStringLiteral("准备材料"));
     }
 };
 QTEST_GUILESS_MAIN(ScheduleTests)

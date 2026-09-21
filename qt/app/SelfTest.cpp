@@ -96,6 +96,12 @@ void runScreenshots(AppController &app, QQuickWindow *window)
             status = 1;
     }
     app.setPage(1);
+    if (QObject *panel = window->findChild<QObject *>(QStringLiteral("todayTasksPanel"))) {
+        panel->setProperty("expanded", true);
+        if (!grab(window, dir + QStringLiteral("/today-tasks.png"))) status = 1;
+        panel->setProperty("expanded", false);
+    } else status = 1;
+    app.setPage(1);
     if (QObject *dialog = window->findChild<QObject *>(QStringLiteral("slotDialog"))) {
         QMetaObject::invokeMethod(dialog, "openFor", Q_ARG(QVariant, 1), Q_ARG(QVariant, 0));
         if (!grab(window, dir + QStringLiteral("/dialog-slot.png"))) status = 1;

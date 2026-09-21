@@ -46,6 +46,7 @@ qt_add_qml_module(GdipuActivityHelper
         qml/pages/CourseDetailDialog.qml
         qml/pages/SlotDialog.qml
         qml/components/BookmarkButton.qml
+        qml/components/TodayTasksPanel.qml
     RESOURCES
         assets/app-logo.png
 )

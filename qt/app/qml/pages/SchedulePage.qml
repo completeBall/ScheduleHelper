@@ -109,6 +109,19 @@ Rectangle {
             }
 
             Text {
+                text: "活动时间"
+                font.family: Theme.fontUi
+                font.pixelSize: Theme.textSm
+                color: Theme.textMuted
+            }
+            FilterCombo {
+                Layout.preferredWidth: 190
+                model: ["报名后显示", "提前显示全部"]
+                currentIndex: page.sched.activityReminderMode
+                onActivated: page.sched.activityReminderMode = currentIndex
+            }
+
+            Text {
                 text: page.rev >= 0 ? page.sched.summary : ""
                 font.family: Theme.fontUi
                 font.pixelSize: Theme.textSm

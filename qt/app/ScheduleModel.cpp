@@ -7,6 +7,7 @@
 #include <QUuid>
 #include <QUrl>
 #include <QVariantMap>
+#include <algorithm>
 
 using namespace Campus;
 
@@ -46,6 +47,19 @@ void ScheduleModel::setWeek(int week)
     save();
 }
 
+void ScheduleModel::setActivityReminderMode(int mode)
+{
+    if ((mode != 0 && mode != 1) || m_data.activityReminderMode == mode) return;
+    m_data.activityReminderMode = mode;
+    save();
+    changed();
+}
+
+bool ScheduleModel::showsReminder(const Reminder &r, const Activity &activity) const
+{
+    return m_data.activityReminderMode == 1 || ((r.kind == Reminder::Event) == m_activities->isClaimed(activity));
+}
+
 QString ScheduleModel::importedAt() const
 {
     if (m_data.importedAt.isEmpty())
@@ -64,7 +78,7 @@ QString ScheduleModel::summary() const
     if (m_week > 0 && hasAnchor())
         for (const Activity &a : m_activities->reminderActivities())
             for (const Reminder &r : activityMoments(a, m_data.weekOneMonday))
-                if (r.week == m_week && (r.kind == Reminder::Event) == m_activities->isClaimed(a))
+                if (r.week == m_week && showsReminder(r, a))
                     ++reminders;
     QString text = QStringLiteral("%1 条课程安排").arg(courses);
     if (reminders > 0)
@@ -100,6 +114,7 @@ void ScheduleModel::applyImport(Schedule imported)
 {
     imported.manualCourses = m_data.manualCourses;
     imported.memos = m_data.memos;
+    imported.activityReminderMode = m_data.activityReminderMode;
     imported.weekOneMonday = m_data.weekOneMonday;
     imported.selectedWeek = m_data.selectedWeek;
     imported.importedAt = QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs);
@@ -150,7 +165,7 @@ QVariantList ScheduleModel::entries(int day, int block) const
             for (const Reminder &r : activityMoments(a, m_data.weekOneMonday)) {
                 if (r.week != m_week || r.day != day || r.block != block)
                     continue;
-                if ((r.kind == Reminder::Event) != m_activities->isClaimed(a))
+                if (!showsReminder(r, a))
                     continue;
                 const bool registration = r.kind == Reminder::Registration;
                 const QString what = registration ? QStringLiteral("报名时间：") : QStringLiteral("活动时间：");
@@ -202,17 +217,38 @@ QVariantList ScheduleModel::cards(int day, int block) const
 
 QString ScheduleModel::memo(int week, int day, int block) const
 {
-    return m_data.memos.value(QStringLiteral("%1/%2/%3").arg(week).arg(day).arg(block)).toString();
+    const QJsonValue value = m_data.memos.value(QStringLiteral("%1/%2/%3").arg(week).arg(day).arg(block));
+    return value.isObject() ? value.toObject().value(QStringLiteral("text")).toString() : value.toString();
+}
+
+QString ScheduleModel::memoTime(int week, int day, int block) const
+{
+    if (block < 0 || block >= periods().size()) return {};
+    const QJsonValue value = m_data.memos.value(QStringLiteral("%1/%2/%3").arg(week).arg(day).arg(block));
+    const QString time = value.isObject() ? value.toObject().value(QStringLiteral("time")).toString() : QString();
+    return time.isEmpty() ? periods().at(block).time.left(5) + QStringLiteral(":00") : time;
 }
 
 QString ScheduleModel::setMemo(int week, int day, int block, const QString &text)
 {
+    return setMemoAt(week, day, block, text, memoTime(week, day, block));
+}
+
+QString ScheduleModel::setMemoAt(int week, int day, int block, const QString &text, const QString &time)
+{
     if (week < 1 || week > 30 || day < 1 || day > 7 || block < 0 || block > 5)
         return QStringLiteral("请先选择具体周次和有效时段。");
+    const QTime at = QTime::fromString(time, QStringLiteral("HH:mm:ss"));
+    const Period &period = periods().at(block);
+    const QTime start = QTime::fromString(period.time.left(5), QStringLiteral("HH:mm"));
+    const QTime end = QTime::fromString(period.time.right(5), QStringLiteral("HH:mm"));
+    if (!text.trimmed().isEmpty() && (!at.isValid() || at < start || at > end))
+        return QStringLiteral("请输入该时段内的具体时间，格式为 HH:mm:ss。");
     Schedule updated = m_data;
     const QString key = QStringLiteral("%1/%2/%3").arg(week).arg(day).arg(block);
     if (text.trimmed().isEmpty()) updated.memos.remove(key);
-    else updated.memos.insert(key, text.trimmed());
+    else updated.memos.insert(key, QJsonObject{{QStringLiteral("text"), text.trimmed()},
+                                            {QStringLiteral("time"), time}});
     QString error;
     if (!m_path.isEmpty() && !saveSchedule(m_path, updated, &error))
         return QStringLiteral("备忘录保存失败：") + error;
@@ -224,6 +260,47 @@ QString ScheduleModel::setMemo(int week, int day, int block, const QString &text
 QString ScheduleModel::dateOf(int week, int day) const
 {
     return dateFor(m_data.weekOneMonday, week, day);
+}
+
+QVariantList ScheduleModel::tasksForDate(const QString &dateText) const
+{
+    QVariantList out;
+    const QDate date = QDate::fromString(dateText, Qt::ISODate);
+    const QDate monday = QDate::fromString(m_data.weekOneMonday, Qt::ISODate);
+    if (!date.isValid() || !monday.isValid() || date < monday) return out;
+    const int week = int(monday.daysTo(date)) / 7 + 1;
+    if (week < 1 || week > 40) return out;
+    const int day = date.dayOfWeek();
+    const auto add = [&](const QString &kind, const QString &title, const QString &detail, const QTime &time) {
+        if (!time.isValid()) return;
+        const QDateTime at(date, time, beijing());
+        out << QVariantMap{{QStringLiteral("kind"), kind}, {QStringLiteral("title"), title},
+                           {QStringLiteral("detail"), detail}, {QStringLiteral("time"), time.toString(QStringLiteral("HH:mm:ss"))},
+                           {QStringLiteral("target"), at.toString(Qt::ISODate)}};
+    };
+    for (const Course &course : m_data.allCourses()) {
+        if (course.day != day || !course.inWeek(week) || course.sections.isEmpty()) continue;
+        const int block = (*std::min_element(course.sections.cbegin(), course.sections.cend()) - 1) / 2;
+        if (block >= 0 && block < periods().size())
+            add(QStringLiteral("course"), course.name, periods().at(block).time,
+                QTime::fromString(periods().at(block).time.left(5), QStringLiteral("HH:mm")));
+    }
+    for (const Activity &activity : m_activities->reminderActivities())
+        for (const Reminder &reminder : activityMoments(activity, m_data.weekOneMonday)) {
+            if (reminder.week != week || reminder.day != day || !showsReminder(reminder, activity)) continue;
+            const bool registration = reminder.kind == Reminder::Registration;
+            add(registration ? QStringLiteral("registration") : QStringLiteral("event"), activity.name,
+                activity.place, QTime::fromString(reminder.start.mid(11), QStringLiteral("HH:mm")));
+        }
+    for (int block = 0; block < periods().size(); ++block) {
+        const QString note = memo(week, day, block);
+        if (!note.isEmpty()) add(QStringLiteral("memo"), note, periods().at(block).label,
+                                 QTime::fromString(memoTime(week, day, block), QStringLiteral("HH:mm:ss")));
+    }
+    std::sort(out.begin(), out.end(), [](const QVariant &a, const QVariant &b) {
+        return a.toMap().value(QStringLiteral("target")).toString() < b.toMap().value(QStringLiteral("target")).toString();
+    });
+    return out;
 }
 
 QString ScheduleModel::setAnchor(int week, int day, const QString &date)

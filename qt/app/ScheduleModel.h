@@ -21,6 +21,7 @@ class ScheduleModel : public QObject
     Q_PROPERTY(QString weekOneMonday READ weekOneMonday NOTIFY revisionChanged)
     Q_PROPERTY(QStringList dayNames READ dayNames CONSTANT)
     Q_PROPERTY(QVariantList periods READ periodList CONSTANT)
+    Q_PROPERTY(int activityReminderMode READ activityReminderMode WRITE setActivityReminderMode NOTIFY revisionChanged)
 
 public:
     explicit ScheduleModel(ActivityModel *activities, QObject *parent = nullptr);
@@ -36,6 +37,9 @@ public:
     QString weekOneMonday() const { return m_data.weekOneMonday; }
     QStringList dayNames() const { return Campus::dayNames(); }
     QVariantList periodList() const;
+    int activityReminderMode() const { return m_data.activityReminderMode; }
+    void setActivityReminderMode(int mode);
+    bool showsReminder(const Campus::Reminder &r, const Activity &activity) const;
 
     void setStoragePath(const QString &path) { m_path = path; }   // empty = do not persist
     bool load(QString *error = nullptr);
@@ -47,7 +51,10 @@ public:
     Q_INVOKABLE QVariantList cards(int day, int block) const;
     Q_INVOKABLE QVariantList entries(int day, int block) const;
     Q_INVOKABLE QString memo(int week, int day, int block) const;
+    Q_INVOKABLE QString memoTime(int week, int day, int block) const;
     Q_INVOKABLE QString setMemo(int week, int day, int block, const QString &text);
+    Q_INVOKABLE QString setMemoAt(int week, int day, int block, const QString &text, const QString &time);
+    Q_INVOKABLE QVariantList tasksForDate(const QString &date) const;
     Q_INVOKABLE QString dayDate(int day) const;               // "09/23" or ""
     Q_INVOKABLE QString dateOf(int week, int day) const;      // yyyy-MM-dd, "" without an anchor
     Q_INVOKABLE QString setAnchor(int week, int day, const QString &date);   // "" on success

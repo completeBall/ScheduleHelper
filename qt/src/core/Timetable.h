@@ -39,7 +39,8 @@ struct Course {
 struct Schedule {
     QList<Course> courses;
     QList<Course> manualCourses;
-    QJsonObject memos;             // week/day/block -> user text
+    QJsonObject memos;             // week/day/block -> {text,time}, legacy strings still load
+    int activityReminderMode = 0;  // 0: registered event only; 1: preview all event times
     QString semester;
     QString source;
     int unknownRows = 0;

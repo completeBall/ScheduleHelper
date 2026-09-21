@@ -17,11 +17,12 @@ Dialog {
         slotWeek = app.schedule.week
         items = app.schedule.entries(day, block)
         memoField.text = app.schedule.memo(slotWeek, day, block)
+        memoTimeField.text = app.schedule.memoTime(slotWeek, day, block)
         error = ""
         open()
     }
     function saveMemo() {
-        error = app.schedule.setMemo(slotWeek, slotDay, slotBlock, memoField.text)
+        error = app.schedule.setMemoAt(slotWeek, slotDay, slotBlock, memoField.text, memoTimeField.text)
         if (error === "") close()
     }
     parent: Overlay.overlay
@@ -103,13 +104,36 @@ Dialog {
                     text: "备忘录"
                     font.family: Theme.fontUi; font.pixelSize: Theme.textMd; font.bold: true; color: Theme.memoColor
                 }
+                RowLayout {
+                    Layout.fillWidth: true
+                    Text {
+                        text: "提醒时间"
+                        font.family: Theme.fontUi; font.pixelSize: Theme.textSm; color: Theme.textMuted
+                    }
+                    TextField {
+                        id: memoTimeField
+                        objectName: "slotMemoTimeEditor"
+                        Layout.preferredWidth: 130
+                        enabled: dlg.slotWeek > 0
+                        placeholderText: "HH:mm:ss"
+                        validator: RegularExpressionValidator { regularExpression: /^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/ }
+                        font.family: Theme.fontUi; font.pixelSize: Theme.textMd
+                        color: Theme.text
+                        background: Rectangle { radius: Theme.radiusSm; color: Theme.surface; border.color: memoTimeField.activeFocus ? Theme.memoColor : Theme.border }
+                    }
+                    Text {
+                        text: "限 " + app.schedule.periods[dlg.slotBlock].time
+                        font.family: Theme.fontUi; font.pixelSize: Theme.textXs; color: Theme.textMuted
+                    }
+                    Item { Layout.fillWidth: true }
+                }
                 TextArea {
                     id: memoField
                     objectName: "slotMemoEditor"
                     Layout.fillWidth: true
                     Layout.minimumHeight: 120
                     enabled: dlg.slotWeek > 0
-                    placeholderText: dlg.slotWeek > 0 ? "记录这个时段要做的事…（清空并保存可删除）" : "请先选择具体周次，再添加备忘录"
+                    placeholderText: dlg.slotWeek > 0 ? "写下要做的事，按上方具体时间提醒…（清空并保存可删除）" : "请先选择具体周次，再添加备忘录"
                     wrapMode: TextEdit.Wrap
                     selectByMouse: true
                     color: Theme.text

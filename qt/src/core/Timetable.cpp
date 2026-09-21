@@ -124,6 +124,7 @@ Schedule Schedule::fromJson(const QJsonObject &o)
 {
     Schedule s;
     s.memos = o.value(QLatin1String("memos")).toObject();
+    s.activityReminderMode = o.value(QLatin1String("activityReminderMode")).toInt() == 1 ? 1 : 0;
     for (const QJsonValue &v : o.value(QLatin1String("courses")).toArray())
         s.courses << Course::fromJson(v.toObject());
     for (const QJsonValue &v : o.value(QLatin1String("manualCourses")).toArray()) {
@@ -145,6 +146,7 @@ QJsonObject Schedule::toJson() const
     QJsonObject o;
     QJsonArray cs, ms;
     o.insert(QStringLiteral("memos"), memos);
+    o.insert(QStringLiteral("activityReminderMode"), activityReminderMode);
     for (const Course &c : courses)
         cs.append(c.toJson());
     for (const Course &c : manualCourses)
