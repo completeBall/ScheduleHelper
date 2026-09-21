@@ -1,4 +1,4 @@
-find_package(Qt6 6.8 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 WebEngineQuick Widgets)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 WebEngineQuick Widgets Network)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -6,6 +6,7 @@ qt_add_executable(GdipuActivityHelper WIN32
     app.rc
     main.cpp
     AppController.cpp
+    UpdateManager.cpp
     ActivityModel.cpp
     ScheduleModel.cpp
     ScheduleImporter.cpp
@@ -52,7 +53,7 @@ qt_add_qml_module(GdipuActivityHelper
 qt_add_resources(GdipuActivityHelper scripts
     PREFIX /gdipu
     BASE ${CMAKE_CURRENT_SOURCE_DIR}
-    FILES js/extract.js
+    FILES js/extract.js js/install-update.ps1
 )
 
 target_include_directories(GdipuActivityHelper PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -63,5 +64,6 @@ target_link_libraries(GdipuActivityHelper PRIVATE
     Qt6::QuickDialogs2
     Qt6::WebEngineQuick
     Qt6::Widgets
+    Qt6::Network
 )
 target_compile_definitions(GdipuActivityHelper PRIVATE QT_NO_CAST_TO_ASCII)

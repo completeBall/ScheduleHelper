@@ -5,6 +5,7 @@
 #include "ScheduleModel.h"
 #include "Scraper.h"
 #include "WebBridge.h"
+#include "UpdateManager.h"
 
 #include <QObject>
 #include <QUrl>
@@ -45,6 +46,7 @@ class AppController : public QObject
     Q_PROPERTY(int autoCollectHours READ autoCollectHours WRITE setAutoCollectHours NOTIFY autoCollectHoursChanged)
     Q_PROPERTY(bool desktopReminders READ desktopReminders WRITE setDesktopReminders NOTIFY desktopRemindersChanged)
     Q_PROPERTY(bool trayAvailable READ trayAvailable NOTIFY trayAvailableChanged)
+    Q_PROPERTY(UpdateManager *updater READ updater CONSTANT)
 
 public:
     explicit AppController(const AppOptions &options, QObject *parent = nullptr);
@@ -75,6 +77,7 @@ public:
     bool desktopReminders() const { return m_desktopReminders; }
     void setDesktopReminders(bool enabled);
     bool trayAvailable() const { return m_tray != nullptr; }
+    UpdateManager *updater() const { return m_updater; }
     Q_INVOKABLE void hideToTray();
 
     void loadDemo(const QString &activitiesJson);
@@ -126,4 +129,6 @@ private:
     QTimer m_clock;
     QSystemTrayIcon *m_tray = nullptr;
     QSet<QString> m_notified;
+    UpdateManager *m_updater = nullptr;
+    QString m_updateNotifiedVersion;
 };

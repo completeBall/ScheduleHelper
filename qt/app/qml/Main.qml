@@ -131,6 +131,18 @@ ApplicationWindow {
 
                 NavButton {
                     Layout.fillWidth: true
+                    visible: app.updater.available
+                    text: app.updater.busy ? "更新下载中 " + app.updater.progress + "%" : "更新至 v" + app.updater.latestVersion
+                    glyph: Theme.icon.download
+                    compact: win.compact
+                    active: true
+                    busy: app.updater.busy
+                    enabled: !app.updater.busy
+                    onClicked: app.updater.install()
+                }
+
+                NavButton {
+                    Layout.fillWidth: true
                     text: "设置与说明"
                     glyph: Theme.icon.settings
                     compact: win.compact

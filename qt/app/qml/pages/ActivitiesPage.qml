@@ -64,7 +64,7 @@ Rectangle {
                 text: app.autoCollectHours > 0 ? "自动采集 · " + app.autoCollectHours + "小时" : "自动采集"
                 glyph: Theme.icon.clock
                 onClicked: autoMenu.open()
-                Menu {
+                    Menu {
                     id: autoMenu
                     y: parent.height + 4
                     MenuItem { text: "关闭自动采集"; onTriggered: app.autoCollectHours = 0 }
@@ -119,6 +119,11 @@ Rectangle {
                         border.color: Theme.border
                     }
                     MenuItem {
+                        text: "检查新版本"
+                        implicitHeight: 36
+                        onTriggered: app.updater.checkNow()
+                    }
+                    MenuItem {
                         text: "保存为网页…"
                         enabled: page.acts.total > 0
                         implicitHeight: 36
@@ -140,6 +145,28 @@ Rectangle {
                         }
                     }
                 }
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            visible: app.updater.available || app.updater.busy || app.updater.showResult
+            spacing: 12
+            Text {
+                Layout.fillWidth: true
+                text: app.updater.message + (app.updater.busy ? " " + app.updater.progress + "%" : "")
+                font.family: Theme.fontUi
+                font.pixelSize: Theme.textSm
+                color: Theme.primary
+                wrapMode: Text.Wrap
+            }
+            AppButton {
+                visible: app.updater.available
+                text: app.updater.busy ? "下载中…" : "更新至 v" + app.updater.latestVersion
+                glyph: Theme.icon.download
+                variant: "primary"
+                enabled: !app.updater.busy
+                onClicked: app.updater.install()
             }
         }
 

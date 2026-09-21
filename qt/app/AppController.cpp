@@ -49,6 +49,8 @@ AppController::AppController(const AppOptions &options, QObject *parent)
     m_academic = new WebBridge(QStringLiteral("academic"), this);
     m_scraper = new Scraper(m_school, m_activities, this);
     m_importer = new ScheduleImporter(m_academic, m_schedule, this);
+    m_updater = new UpdateManager(m_dataDir, !options.testing && options.demoActivities.isEmpty()
+                                    && options.screenshotDir.isEmpty(), this);
 
     const QString prelude = readResource(QStringLiteral(":/gdipu/js/extract.js"));
     m_school->setPrelude(prelude);
@@ -160,6 +162,14 @@ AppController::AppController(const AppOptions &options, QObject *parent)
         m_clock.start();
         QTimer::singleShot(1000, this, &AppController::checkTimers);
     }
+    connect(m_updater, &UpdateManager::changed, this, [this] {
+        if (m_tray && m_updater->available() && m_updateNotifiedVersion != m_updater->latestVersion()) {
+            m_updateNotifiedVersion = m_updater->latestVersion();
+            m_tray->showMessage(QStringLiteral("发现新版本 v%1").arg(m_updateNotifiedVersion),
+                                QStringLiteral("打开广轻活动汇总，点击更新按钮即可安装。"),
+                                QSystemTrayIcon::Information, 10000);
+        }
+    });
 
     // Closing the window must unwind any nested wait loops before the app quits.
     connect(qGuiApp, &QGuiApplication::lastWindowClosed, this, [this] { cancelEverything(); });
