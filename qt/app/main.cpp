@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("广轻活动汇总"));
     app.setOrganizationName(QStringLiteral("GdipuActivityHelper"));
-    app.setApplicationVersion(QStringLiteral("2.3.0"));
+    app.setApplicationVersion(QStringLiteral("2.3.1"));
     app.setWindowIcon(QIcon(QStringLiteral(":/qt/qml/Gdipu/assets/app-logo.png")));
 
     QCommandLineParser parser;

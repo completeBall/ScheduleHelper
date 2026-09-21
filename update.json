@@ -1,12 +1,12 @@
 {
-  "tag_name": "v2.3.0",
+  "tag_name": "v2.3.1",
   "assets": [
     {
-      "name": "ScheduleHelper-v2.3.0-windows-x64.zip",
-      "browser_download_url": "https://github.com/completeBall/ScheduleHelper/releases/download/v2.3.0/ScheduleHelper-v2.3.0-windows-x64.zip",
+      "name": "ScheduleHelper-v2.3.1-windows-x64.zip",
+      "browser_download_url": "https://github.com/completeBall/ScheduleHelper/releases/download/v2.3.1/ScheduleHelper-v2.3.1-windows-x64.zip",
       "state": "uploaded",
-      "size": 102094262,
-      "digest": "sha256:43817c56972a3233307d94dfeea87a61b38bdbcd790c9cd94f674cd44bbeb609"
+      "size": 102097329,
+      "digest": "sha256:05acab0ec037f8715e8b4e58b9781239da2bcd7b3a2edf9e72013ea416354836"
     }
   ]
 }

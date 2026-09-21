@@ -95,6 +95,10 @@ void runScreenshots(AppController &app, QQuickWindow *window)
         if (!grab(window, dir + QLatin1Char('/') + QLatin1String(s.name) + QStringLiteral(".png")))
             status = 1;
     }
+    window->resize(1000, 820);
+    app.setPage(0);
+    if (!grab(window, dir + QStringLiteral("/activities-compact.png"))) status = 1;
+    window->resize(1280, 820);
     app.setPage(1);
     if (QObject *panel = window->findChild<QObject *>(QStringLiteral("todayTasksPanel"))) {
         panel->setProperty("expanded", true);

@@ -156,20 +156,28 @@ ApplicationWindow {
                     }
                     NavButton {
                         id: taskButton
-                        anchors.fill: parent
-                        text: "今日任务 · " + taskPanel.tasks.length
+                        anchors.left: parent.left
+                        anchors.right: settingsButton.left
+                        anchors.rightMargin: win.compact ? 4 : 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: 44
+                        text: "今日任务 " + taskPanel.tasks.length
                         glyph: Theme.icon.bell
                         compact: win.compact
                         active: taskPanel.expanded
                         onClicked: taskPanel.expanded = !taskPanel.expanded
                     }
-                }
-                NavButton {
-                    Layout.preferredWidth: 44
-                    text: "设置与说明"
-                    glyph: Theme.icon.settings
-                    compact: true
-                    onClicked: settingsDialog.open()
+                    NavButton {
+                        id: settingsButton
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: win.compact ? 24 : 44
+                        height: 44
+                        text: "设置与说明"
+                        glyph: Theme.icon.settings
+                        compact: true
+                        onClicked: settingsDialog.open()
+                    }
                 }
             }
         }
