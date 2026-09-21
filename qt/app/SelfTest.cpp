@@ -246,9 +246,16 @@ void runSelfTest(AppController &app, QQuickWindow *window)
                     hasDeadline |= m.value(QStringLiteral("detail")).toString().contains(QStringLiteral("报名截止："));
                 }
         require(schedule->dayDate(3) == QLatin1String("09/23") && schedule->summary().contains(QStringLiteral("3 条"))
-                    && schedule->summary().contains(QStringLiteral("提醒")) && registrationCards >= 1 && eventCards >= 1
+                    && schedule->summary().contains(QStringLiteral("提醒")) && registrationCards >= 1 && eventCards == 0
                     && !hasDeadline && schedule->data().manualCourses.size() == 1,
-                QStringLiteral("日期、双类型活动提醒或手动课程测试失败：") + schedule->summary());
+                QStringLiteral("日期、报名提醒或手动课程测试失败：") + schedule->summary());
+        app.activities()->setClaimed(ActivityModel::activityKey(rows.first()), true);
+        int claimedEvents = 0;
+        for (int day = 1; day <= 7; ++day)
+            for (int block = 0; block < 6; ++block)
+                for (const QVariant &entry : schedule->entries(day, block))
+                    claimedEvents += entry.toMap().value(QStringLiteral("kind")) == QLatin1String("event");
+        require(claimedEvents >= 1, QStringLiteral("已抢到活动未显示活动时间提醒"));
         app.setPage(1);
         require(grab(window, dir + QStringLiteral("/timetable-reminder-preview.png")), QStringLiteral("无法截图"));
 

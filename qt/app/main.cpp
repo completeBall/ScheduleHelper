@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QFont>
 #include <QGuiApplication>
+#include <QApplication>
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -18,10 +19,10 @@ int main(int argc, char *argv[])
     // Must run before the QGuiApplication is constructed.
     QtWebEngineQuick::initialize();
 
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("广轻活动汇总"));
     app.setOrganizationName(QStringLiteral("GdipuActivityHelper"));
-    app.setApplicationVersion(QStringLiteral("2.0.0"));
+    app.setApplicationVersion(QStringLiteral("2.1.0"));
     app.setWindowIcon(QIcon(QStringLiteral(":/qt/qml/Gdipu/assets/app-logo.png")));
 
     QCommandLineParser parser;

@@ -13,6 +13,12 @@ ApplicationWindow {
     visible: true
     title: "广轻活动汇总"
     color: Theme.bg
+    onClosing: function(close) {
+        if (!app.testing && app.trayAvailable && (app.autoCollectHours > 0 || app.desktopReminders)) {
+            close.accepted = false
+            app.hideToTray()
+        }
+    }
 
     readonly property bool compact: width < 1140
 

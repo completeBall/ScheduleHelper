@@ -62,9 +62,9 @@ QString ScheduleModel::summary() const
             ++courses;
     int reminders = 0;
     if (m_week > 0 && hasAnchor())
-        for (const Activity &a : m_activities->all())
+        for (const Activity &a : m_activities->reminderActivities())
             for (const Reminder &r : activityMoments(a, m_data.weekOneMonday))
-                if (r.week == m_week)
+                if (r.week == m_week && (r.kind == Reminder::Event) == m_activities->isClaimed(a))
                     ++reminders;
     QString text = QStringLiteral("%1 条课程安排").arg(courses);
     if (reminders > 0)
@@ -146,9 +146,11 @@ QVariantList ScheduleModel::entries(int day, int block) const
         out << m;
     }
     if (m_week > 0 && hasAnchor()) {
-        for (const Activity &a : m_activities->all()) {
+        for (const Activity &a : m_activities->reminderActivities()) {
             for (const Reminder &r : activityMoments(a, m_data.weekOneMonday)) {
                 if (r.week != m_week || r.day != day || r.block != block)
+                    continue;
+                if ((r.kind == Reminder::Event) != m_activities->isClaimed(a))
                     continue;
                 const bool registration = r.kind == Reminder::Registration;
                 const QString what = registration ? QStringLiteral("报名时间：") : QStringLiteral("活动时间：");

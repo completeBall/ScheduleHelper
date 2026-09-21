@@ -61,6 +61,23 @@ Rectangle {
             Item { Layout.fillWidth: true }
 
             AppButton {
+                text: app.autoCollectHours > 0 ? "自动采集 · " + app.autoCollectHours + "小时" : "自动采集"
+                glyph: Theme.icon.clock
+                onClicked: autoMenu.open()
+                Menu {
+                    id: autoMenu
+                    y: parent.height + 4
+                    MenuItem { text: "关闭自动采集"; onTriggered: app.autoCollectHours = 0 }
+                    MenuItem { text: "每 3 小时"; onTriggered: app.autoCollectHours = 3 }
+                    MenuItem { text: "每 6 小时"; onTriggered: app.autoCollectHours = 6 }
+                    MenuItem { text: "每 12 小时"; onTriggered: app.autoCollectHours = 12 }
+                    MenuItem { text: "每 24 小时"; onTriggered: app.autoCollectHours = 24 }
+                    MenuSeparator {}
+                    MenuItem { text: app.desktopReminders ? "关闭电脑提醒" : "开启电脑提醒"; onTriggered: app.desktopReminders = !app.desktopReminders }
+                }
+            }
+
+            AppButton {
                 visible: page.scraper.busy
                 text: "停止"
                 glyph: Theme.icon.stop
@@ -279,6 +296,8 @@ Rectangle {
                     required property string statusKind
                     required property string url
                     required property string error
+                    required property string activityKey
+                    required property bool claimed
 
                     width: ListView.view.width
                     height: Math.max(68, rowLayout.implicitHeight + 24)
@@ -400,14 +419,20 @@ Rectangle {
                                 color: Theme.textMuted
                             }
                         }
-                        Item {
+                        ColumnLayout {
                             Layout.preferredWidth: page.colStatus
-                            Layout.preferredHeight: badge.implicitHeight
                             Layout.alignment: Qt.AlignVCenter
+                            spacing: 4
                             StatusBadge {
                                 id: badge
                                 kind: row.statusKind
                                 text: row.status
+                            }
+                            Button {
+                                text: row.claimed ? "✓ 已抢到" : "标记已抢到"
+                                implicitHeight: 28
+                                font.pixelSize: 12
+                                onClicked: page.acts.setClaimed(row.activityKey, !row.claimed)
                             }
                         }
                     }

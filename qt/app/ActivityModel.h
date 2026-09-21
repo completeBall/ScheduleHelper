@@ -4,6 +4,8 @@
 
 #include <QAbstractListModel>
 #include <QTimer>
+#include <QSet>
+#include <QHash>
 
 using Campus::Activity;
 
@@ -39,6 +41,8 @@ public:
         StatusKindRole,
         UrlRole,
         ErrorRole,
+        KeyRole,
+        ClaimedRole,
     };
 
     explicit ActivityModel(QObject *parent = nullptr);
@@ -48,6 +52,14 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     void setRows(QList<Activity> rows);
+    static QString activityKey(const Activity &activity);
+    bool isClaimed(const Activity &activity) const { return m_claimed.contains(activityKey(activity)); }
+    void setClaimedKeys(const QStringList &keys);
+    QStringList claimedKeys() const { return m_claimed.values(); }
+    void setClaimedSnapshots(const QList<Activity> &snapshots);
+    QList<Activity> claimedSnapshots() const { return m_claimedSnapshots.values(); }
+    QList<Activity> reminderActivities() const;
+    Q_INVOKABLE void setClaimed(const QString &key, bool claimed);
     const QList<Activity> &all() const { return m_all; }
     QList<Activity> displayed() const { return m_shown; }
 
@@ -73,6 +85,7 @@ public:
 signals:
     void filterChanged();
     void summaryChanged();
+    void claimedChanged();
 
 private:
     void rebuild();
@@ -91,4 +104,6 @@ private:
     int m_limited = 0;
     QString m_signature;
     QTimer m_tick;
+    QSet<QString> m_claimed;
+    QHash<QString, Activity> m_claimedSnapshots;
 };

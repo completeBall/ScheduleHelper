@@ -8,6 +8,10 @@
 
 #include <QObject>
 #include <QUrl>
+#include <QTimer>
+#include <QSet>
+
+class QSystemTrayIcon;
 
 struct AppOptions {
     bool testing = false;            // --self-test <dir>: fixture server, nothing persisted
@@ -38,6 +42,9 @@ class AppController : public QObject
     Q_PROPERTY(bool testing READ testing CONSTANT)
     Q_PROPERTY(QString schoolHome READ schoolHome CONSTANT)
     Q_PROPERTY(QString defaultExportName READ defaultExportName CONSTANT)
+    Q_PROPERTY(int autoCollectHours READ autoCollectHours WRITE setAutoCollectHours NOTIFY autoCollectHoursChanged)
+    Q_PROPERTY(bool desktopReminders READ desktopReminders WRITE setDesktopReminders NOTIFY desktopRemindersChanged)
+    Q_PROPERTY(bool trayAvailable READ trayAvailable NOTIFY trayAvailableChanged)
 
 public:
     explicit AppController(const AppOptions &options, QObject *parent = nullptr);
@@ -63,6 +70,12 @@ public:
     bool testing() const { return m_options.testing; }
     QString schoolHome() const;
     QString defaultExportName() const;
+    int autoCollectHours() const { return m_autoCollectHours; }
+    void setAutoCollectHours(int hours);
+    bool desktopReminders() const { return m_desktopReminders; }
+    void setDesktopReminders(bool enabled);
+    bool trayAvailable() const { return m_tray != nullptr; }
+    Q_INVOKABLE void hideToTray();
 
     void loadDemo(const QString &activitiesJson);
     void cancelEverything();
@@ -84,10 +97,15 @@ signals:
     void browserTabChanged();
     void noticeChanged();
     void themeModeChanged();
+    void autoCollectHoursChanged();
+    void desktopRemindersChanged();
+    void trayAvailableChanged();
     void toast(const QString &message, const QString &kind);   // kind: info | success | error
 
 private:
     void setNotice(const QString &text, const QString &kind = QStringLiteral("info"));
+    void checkTimers();
+    void checkDesktopReminders();
 
     AppOptions m_options;
     QString m_dataDir;
@@ -102,4 +120,10 @@ private:
     QString m_notice;
     QString m_noticeKind = QStringLiteral("info");
     QString m_theme = QStringLiteral("system");
+    int m_autoCollectHours = 0;
+    bool m_desktopReminders = true;
+    QDateTime m_lastCollection;
+    QTimer m_clock;
+    QSystemTrayIcon *m_tray = nullptr;
+    QSet<QString> m_notified;
 };

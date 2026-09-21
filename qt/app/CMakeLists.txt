@@ -1,4 +1,4 @@
-find_package(Qt6 6.8 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 WebEngineQuick)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 WebEngineQuick Widgets)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -62,5 +62,6 @@ target_link_libraries(GdipuActivityHelper PRIVATE
     Qt6::QuickControls2
     Qt6::QuickDialogs2
     Qt6::WebEngineQuick
+    Qt6::Widgets
 )
 target_compile_definitions(GdipuActivityHelper PRIVATE QT_NO_CAST_TO_ASCII)
