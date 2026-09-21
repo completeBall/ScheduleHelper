@@ -74,6 +74,8 @@ void demoSchedule(AppController &app)
     app.schedule()->setAnchor(3, 1, QStringLiteral("2026-09-21"));
     app.schedule()->addManualCourse(QStringLiteral("临时调课"), QStringLiteral("测试教师"), QStringLiteral("测试教室"), 3, 1,
                                     QStringLiteral("3"));
+    app.schedule()->setMemo(3, 1, 0, QStringLiteral("带上笔记本，课后完成活动报名。"));
+    app.schedule()->setMemo(3, 7, 2, QStringLiteral("整理本周学习笔记。"));
 }
 
 } // namespace
@@ -93,6 +95,20 @@ void runScreenshots(AppController &app, QQuickWindow *window)
         if (!grab(window, dir + QLatin1Char('/') + QLatin1String(s.name) + QStringLiteral(".png")))
             status = 1;
     }
+    app.setPage(1);
+    if (QObject *dialog = window->findChild<QObject *>(QStringLiteral("slotDialog"))) {
+        QMetaObject::invokeMethod(dialog, "openFor", Q_ARG(QVariant, 1), Q_ARG(QVariant, 0));
+        if (!grab(window, dir + QStringLiteral("/dialog-slot.png"))) status = 1;
+        // Exercise the actual editor/save handler and verify model propagation.
+        QObject *editor = dialog->findChild<QObject *>(QStringLiteral("slotMemoEditor"));
+        if (!editor) status = 1;
+        else if (!app.options().demoActivities.isEmpty()) {
+            editor->setProperty("text", QStringLiteral("编辑后的备忘录"));
+            QMetaObject::invokeMethod(dialog, "saveMemo");
+            if (app.schedule()->memo(3, 1, 0) != QStringLiteral("编辑后的备忘录")) status = 1;
+        }
+        QMetaObject::invokeMethod(dialog, "close");
+    } else status = 1;
     // progress banner in its two busy states: indeterminate sweep and determinate fill
     app.setPage(0);
     if (QObject *banner = window->findChild<QObject *>(QStringLiteral("activityBanner"))) {
@@ -155,6 +171,8 @@ void runSelfTest(AppController &app, QQuickWindow *window)
 
         // ---- activity collection --------------------------------------------------
         Scraper *scraper = app.scraper();
+        require(app.schedule()->setMemo(2, 1, 0, QStringLiteral("刷新活动后保留")).isEmpty(),
+                QStringLiteral("采集前备忘录保存失败"));
         const QString message = scraper->runCollection();
         note(message);
         require(!scraper->lastRunFailed(), QStringLiteral("采集失败：") + message);
@@ -171,7 +189,10 @@ void runSelfTest(AppController &app, QQuickWindow *window)
         }
         require(urls.size() == 3, QStringLiteral("详情链接重复"));
         require(sameName == 2, QStringLiteral("同名活动丢失"));
+        require(app.schedule()->memo(2, 1, 0) == QStringLiteral("刷新活动后保留"),
+                QStringLiteral("重新采集活动后备忘录丢失"));
         note(QStringLiteral("PASS collection: group-day/class-meeting excluded, 3 details retained"));
+        note(QStringLiteral("PASS collection: timetable memos retained"));
 
         // ---- Excel export ---------------------------------------------------------
         const QString xlsx = dir + QStringLiteral("/未开始活动_测试.xlsx");
@@ -218,7 +239,7 @@ void runSelfTest(AppController &app, QQuickWindow *window)
         bool hasDeadline = false;
         for (int day = 1; day <= 7; ++day)
             for (int block = 0; block < 6; ++block)
-                for (const QVariant &c : schedule->cards(day, block)) {
+                for (const QVariant &c : schedule->entries(day, block)) {
                     const QVariantMap m = c.toMap();
                     registrationCards += m.value(QStringLiteral("kind")) == QLatin1String("registration");
                     eventCards += m.value(QStringLiteral("kind")) == QLatin1String("event");
@@ -246,7 +267,7 @@ void runSelfTest(AppController &app, QQuickWindow *window)
                     && QJsonDocument(schedule->data().toJson()).toJson(QJsonDocument::Compact) == before,
                 QStringLiteral("空课表或登录失效保护测试失败：") + emptyErr + QLatin1Char('|') + loginErr);
         note(QStringLiteral("PASS timetable: empty table and login expiry preserve previous schedule"));
-        note(QStringLiteral("PASS timetable: separate registration/event reminder cards, dates, manual course persistence, odd/even weeks"));
+        note(QStringLiteral("PASS timetable: registration/event reminders, dates, manual course persistence, odd/even weeks"));
 
         result.insert(QStringLiteral("pass"), true);
         result.insert(QStringLiteral("count"), rows.size());

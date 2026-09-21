@@ -1,4 +1,4 @@
-// Golden tests ported from tests/core.test.mjs and tests/timetable.test.mjs.
+// Regression tests for activity processing, timetables, storage and XLSX export.
 #include "core/Activity.h"
 #include "core/Storage.h"
 #include "core/Timetable.h"
@@ -40,7 +40,7 @@ class CoreTests : public QObject
 {
     Q_OBJECT
 private slots:
-    // ---- core.test.mjs ------------------------------------------------------
+    // ---- activity processing -----------------------------------------------
     void timestampIsBeijingTime()
     {
         QCOMPARE(at("2026/09/21 10:00").toUTC(),
@@ -173,7 +173,7 @@ private slots:
         QVERIFY(!err.isEmpty());
     }
 
-    // ---- timetable.test.mjs ---------------------------------------------------
+    // ---- timetable parsing -------------------------------------------------
     void periodsMatchTheTimetable()
     {
         QStringList times;

@@ -4,10 +4,20 @@ rem The folder can be zipped and copied to any Windows 10/11 x64 machine (no Qt 
 setlocal
 call "%~dp0build.cmd" || exit /b 1
 
-set "VS=C:\Program Files\Microsoft Visual Studio\18\Community"
-set "QT=G:\Qt\6.8.3\msvc2022_64"
+set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if defined VS_ROOT set "VS=%VS_ROOT%"
+if not defined VS if exist "%VSWHERE%" for /f "usebackq tokens=*" %%I in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VS=%%I"
+if defined QT_ROOT set "QT=%QT_ROOT%"
+if not defined QT if exist "C:\Qt\6.8.3\msvc2022_64" set "QT=C:\Qt\6.8.3\msvc2022_64"
+if not defined VS exit /b 1
+if not defined QT exit /b 1
 set "OUT=%~dp0dist\GdipuActivityHelper"
-set "CRT=%VS%\VC\Redist\MSVC\14.44.35112\x64\Microsoft.VC143.CRT"
+set "CRT="
+for /d %%D in ("%VS%\VC\Redist\MSVC\*") do if exist "%%~fD\x64\Microsoft.VC143.CRT" set "CRT=%%~fD\x64\Microsoft.VC143.CRT"
+if not defined CRT (
+    echo Visual C++ runtime files were not found.
+    exit /b 1
+)
 
 if exist "%OUT%" rmdir /s /q "%OUT%"
 mkdir "%OUT%" || exit /b 1

@@ -42,6 +42,8 @@ qt_add_qml_module(GdipuActivityHelper
         qml/pages/DateDialog.qml
         qml/pages/CourseDialog.qml
         qml/pages/CourseDetailDialog.qml
+        qml/pages/SlotDialog.qml
+        qml/components/BookmarkButton.qml
 )
 
 qt_add_resources(GdipuActivityHelper scripts

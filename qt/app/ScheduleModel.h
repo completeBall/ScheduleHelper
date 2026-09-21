@@ -7,7 +7,7 @@
 #include <QVariantList>
 
 // The timetable the QML grid renders: imported courses, manual courses and the
-// activity reminder cards derived from the activity list.
+// activity bookmarks derived from the activity list, plus per-slot memos.
 class ScheduleModel : public QObject
 {
     Q_OBJECT
@@ -45,6 +45,9 @@ public:
     void applyImport(Campus::Schedule imported);
 
     Q_INVOKABLE QVariantList cards(int day, int block) const;
+    Q_INVOKABLE QVariantList entries(int day, int block) const;
+    Q_INVOKABLE QString memo(int week, int day, int block) const;
+    Q_INVOKABLE QString setMemo(int week, int day, int block, const QString &text);
     Q_INVOKABLE QString dayDate(int day) const;               // "09/23" or ""
     Q_INVOKABLE QString dateOf(int week, int day) const;      // yyyy-MM-dd, "" without an anchor
     Q_INVOKABLE QString setAnchor(int week, int day, const QString &date);   // "" on success

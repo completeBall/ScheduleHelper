@@ -123,6 +123,7 @@ QJsonObject Course::toJson() const
 Schedule Schedule::fromJson(const QJsonObject &o)
 {
     Schedule s;
+    s.memos = o.value(QLatin1String("memos")).toObject();
     for (const QJsonValue &v : o.value(QLatin1String("courses")).toArray())
         s.courses << Course::fromJson(v.toObject());
     for (const QJsonValue &v : o.value(QLatin1String("manualCourses")).toArray()) {
@@ -143,6 +144,7 @@ QJsonObject Schedule::toJson() const
 {
     QJsonObject o;
     QJsonArray cs, ms;
+    o.insert(QStringLiteral("memos"), memos);
     for (const Course &c : courses)
         cs.append(c.toJson());
     for (const Course &c : manualCourses)

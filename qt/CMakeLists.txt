@@ -30,6 +30,10 @@ target_link_libraries(core_tests PRIVATE campus_core Qt6::Test)
 target_compile_definitions(core_tests PRIVATE
     REPO_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/..")
 add_test(NAME core_tests COMMAND core_tests)
+add_executable(schedule_tests tests/tst_schedule.cpp app/ScheduleModel.cpp app/ActivityModel.cpp)
+target_include_directories(schedule_tests PRIVATE app)
+target_link_libraries(schedule_tests PRIVATE campus_core Qt6::Test Qt6::Gui)
+add_test(NAME schedule_tests COMMAND schedule_tests)
 
 if(BUILD_APP)
     add_subdirectory(app)

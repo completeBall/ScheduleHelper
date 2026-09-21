@@ -1,54 +1,113 @@
 # ScheduleHelper（广轻活动汇总）
 
-用于采集广东轻工职业技术大学智慧校园中的未开始活动，并与个人课表联动显示报名提醒和活动开始提醒。
+ScheduleHelper 是面向广东轻工职业技术大学智慧校园的 Windows 桌面程序，使用 C++17、Qt 6.8、Qt Quick 和 Qt WebEngine 开发。它可以采集未开始的校园活动、导入个人课表，并把报名、活动和备忘录集中显示在每周课表中。
 
-Windows 桌面程序使用 C++17 / Qt 6.8，编译与运行方法见下文。首次使用时需要分别登录活动系统和教务系统。
+## 功能
 
-主要功能：
+- 采集活动名称、报名时间、活动时间、地点、组织、名额和报名状态。
+- 自动排除团日、班会和“班级活动”。
+- 搜索、筛选、排序并导出带格式的 Excel `.xlsx` 文件。
+- 从教务系统导入个人课表，支持单双周、手动课程和日期设置。
+- 在课程旁显示黄色报名书签、红色活动书签和绿色备忘录书签。
+- 点击课程或书签查看该时段的全部提醒，并编辑备忘录。
+- 没有课程但存在提醒或备忘录时，自动创建空闲时段卡片。
+- 从下拉框选择全部周次或第 1–30 周。
+- 在课表页每天刷新活动；书签自动更新，备忘录不会被活动刷新或课表重新导入删除。
+- 支持浅色、深色和跟随系统主题。
 
-- 采集活动名称、报名时间、活动地点、活动时间和名额等信息。
-- 自动排除团日、班会以及活动类型为“班级活动”的项目。
-- 按报名开始时间排序并导出带格式的 Excel `.xlsx` 表格。
-- 从教务系统一键导入课表，支持日期补全和手动添加临时调课。
-- 在课表中分别显示橙色报名提醒卡和蓝色活动开始提醒卡。
+## 使用方法
 
-## Qt 版（C++17 / Qt 6.8 · Qt Quick + Qt WebEngine）
+1. 打开“学校 / 教务登录”，完成学校统一认证。
+2. 在“活动汇总”点击“开始采集”，或在“我的课表”点击“刷新活动”。
+3. 登录教务系统并点击“一键导入课表”。
+4. 点击“设置日期”，指定任意周中的任意日期。
+5. 从周次下拉框选择具体周次，即可查看提醒并添加备忘录。
 
-`qt/` 包含 C++ 与 Qt 桌面程序源码，界面支持统一的侧栏外壳、浅色/深色主题、指标卡、可筛选的活动列表、自适应课表网格、表单对话框。
+程序只读取活动和课表信息，不会自动报名。缓存、课表、备忘录、设置和浏览器登录状态保存在：
 
-```
-qt/src/core/     纯 C++ 逻辑，无 UI：活动状态与排序、周次/节次解析、日期推算、提醒映射、JSON 存取、XLSX 导出
-qt/app/          应用：QML 界面（qml/）、模型、采集状态机 Scraper、课表导入 ScheduleImporter、WebBridge
-qt/app/js/       注入学校页面的 DOM 抽取脚本（从 extension/*.js 剥离，选择器与解析规则不变）
-qt/tests/        Qt Test：移植自 tests/*.test.mjs 的用例
-```
-
-数据保存在 `%LOCALAPPDATA%\GdipuActivityHelper` 下的 `last-results.json`、`timetable.json`，已有数据可直接读取。浏览器登录状态使用新的 `BrowserProfileQt`，首次需要重新登录一次。
-
-环境：Visual Studio 2022+（MSVC 14.44）、Qt 6.8.3 `msvc2022_64`（含 QtDeclarative、QtWebEngine、QtWebChannel、QtPositioning、QtShaderTools、QtSvg）。路径写在 `qt/build.cmd`，按本机修改。
-
-```
-qt\build.cmd            配置并编译；build.cmd test 额外运行单元测试；build.cmd noapp 只编译核心库与测试
-qt\run.cmd              开发时运行（临时把 Qt 加入 PATH）
-qt\deploy.cmd           编译并打包到 qt\dist\GdipuActivityHelper（约 210 MB，zip 后约 95 MB，其中 Chromium 内核占大头）
+```text
+%LOCALAPPDATA%\GdipuActivityHelper
 ```
 
-端到端自检：先 `node server.mjs` 启动模拟学校网站，再运行
+其中 `last-results.json` 保存活动缓存，`timetable.json` 保存课表和备忘录。每天重新采集只替换活动缓存，不会修改 `timetable.json` 中的备忘录。
 
+## 源码结构
+
+```text
+qt/src/core/     活动、课表、存储和 XLSX 导出等 C++ 核心逻辑
+qt/app/          Qt Quick 桌面应用、模型、采集器和教务导入器
+qt/app/qml/      页面、对话框和通用界面组件
+qt/app/js/       注入学校页面的 DOM 解析脚本
+qt/tests/        Qt Test 自动测试
+tests/           端到端自检所需的课表页面生成器
+server.mjs       本地模拟学校网站
+activities.json  演示和测试活动数据
 ```
-qt\run.cmd --self-test <输出目录>          可选 --schedule-fixture <真实教务页面URL>
-```
 
-自检会驱动真实界面与内置浏览器完成：采集（团日/班会/班级活动被排除、同名活动保留）、XLSX 导出、课表导入、单双周、手动课程、双类型提醒卡片、空课表/登录失效不覆盖旧课表，并写出 `result.json` 与 `self-test.log`，退出码表示是否通过。`--screenshot <目录> --demo activities.json [--theme light|dark]` 可对各页面和对话框截图（不读写真实数据）。
+## 编译环境
 
-Excel 中读取失败的活动显示“读取失败”；所有时间判断固定按北京时间（UTC+8），不再依赖本机时区。
+- Windows 10/11 x64
+- Visual Studio 2022 或更高版本，安装“使用 C++ 的桌面开发”
+- Qt 6.8.3 `msvc2022_64`
+- Qt 模块：Declarative、WebEngine、WebChannel、Positioning、ShaderTools、SVG
 
-## JavaScript 解析测试
-
-保留 `extension/` 中的解析脚本及其测试，可在仓库根目录执行：
+构建脚本会通过 `vswhere` 自动查找 Visual Studio。Qt 默认从常见安装位置查找，也可以先设置：
 
 ```bat
-node --test --test-isolation=none tests/core.test.mjs tests/timetable.test.mjs
+set QT_ROOT=D:\Qt\6.8.3\msvc2022_64
 ```
 
-模拟课表页面可通过 `node tests/build-timetable-fixture.mjs` 生成，供 Qt 端到端自检使用。
+编译 Release 版本：
+
+```bat
+qt\build.cmd
+```
+
+编译并运行测试：
+
+```bat
+qt\build.cmd test
+```
+
+仅编译核心库和测试：
+
+```bat
+qt\build.cmd noapp
+```
+
+开发运行：
+
+```bat
+qt\run.cmd
+```
+
+生成包含 Qt 和 WebEngine 运行文件的独立发布目录：
+
+```bat
+qt\deploy.cmd
+```
+
+输出目录为 `qt\dist\GdipuActivityHelper`。
+
+## 测试
+
+`qt/tests/tst_core.cpp` 验证活动处理、课表解析、存储和 XLSX 导出；`qt/tests/tst_schedule.cpp` 验证提醒书签、空闲卡片、备忘录持久化，以及活动刷新和课表重新导入不会删除备忘录。
+
+端到端自检会运行真实 Qt 界面和内置浏览器。先在仓库根目录生成模拟课表页面并启动服务器：
+
+```bat
+node tests\build-timetable-fixture.mjs
+node server.mjs
+```
+
+另开终端执行：
+
+```bat
+qt\run.cmd --self-test qt\build\self-test
+```
+
+自检涵盖活动采集与过滤、重复活动、Excel 导出、课表导入、单双周、手动课程、提醒映射、备忘录保留，以及登录失效或空课表时保护原数据。
+
+## 数据与时间
+
+所有活动时间固定按北京时间（UTC+8）判断。JSON 写入使用原子替换，避免写入中断损坏已有数据。活动详情链接只允许学校活动系统的 HTTPS 地址。

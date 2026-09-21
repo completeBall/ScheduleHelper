@@ -11,6 +11,12 @@ Rectangle {
     readonly property int gutter: narrow ? 20 : 28
     readonly property var sched: app.schedule
     readonly property var importer: app.importer
+    readonly property var scraper: app.scraper
+    readonly property var weekOptions: {
+        const values = ["全部周次"]
+        for (let week = 1; week <= 30; ++week) values.push("第 " + week + " 周")
+        return values
+    }
     readonly property int rev: sched.revision          // touch to re-evaluate card bindings
     readonly property int labelWidth: narrow ? 74 : 96
 
@@ -66,6 +72,12 @@ Rectangle {
                 onClicked: courseDialog.openDialog()
             }
             AppButton {
+                text: page.scraper.busy ? "采集中…" : "刷新活动"
+                glyph: Theme.icon.refresh
+                enabled: !page.scraper.busy
+                onClicked: app.startCollect()
+            }
+            AppButton {
                 text: page.importer.busy ? "导入中…" : "一键导入课表"
                 glyph: Theme.icon.download
                 variant: "primary"
@@ -79,51 +91,21 @@ Rectangle {
             Layout.fillWidth: true
             spacing: 10
 
-            Card {
-                Layout.preferredHeight: 44
-                Layout.preferredWidth: weekRow.implicitWidth + 12
-                RowLayout {
-                    id: weekRow
-                    anchors.centerIn: parent
-                    spacing: 2
-                    AppButton {
-                        glyph: Theme.icon.chevronLeft
-                        iconSize: 13
-                        variant: "ghost"
-                        implicitWidth: 34
-                        implicitHeight: 34
-                        leftPadding: 0
-                        rightPadding: 0
-                        enabled: page.sched.week > 0
-                        onClicked: page.sched.week = page.sched.week - 1
-                    }
-                    Text {
-                        Layout.preferredWidth: 96
-                        horizontalAlignment: Text.AlignHCenter
-                        text: page.sched.week > 0 ? "第 " + page.sched.week + " 周" : "全部周次"
-                        font.family: Theme.fontUi
-                        font.pixelSize: Theme.textMd
-                        font.weight: Font.DemiBold
-                        color: Theme.text
-                    }
-                    AppButton {
-                        glyph: Theme.icon.chevronRight
-                        iconSize: 13
-                        variant: "ghost"
-                        implicitWidth: 34
-                        implicitHeight: 34
-                        leftPadding: 0
-                        rightPadding: 0
-                        enabled: page.sched.week < 30
-                        onClicked: page.sched.week = page.sched.week + 1
-                    }
+            RowLayout {
+                spacing: 8
+                Text {
+                    text: "显示周次"
+                    font.family: Theme.fontUi
+                    font.pixelSize: Theme.textSm
+                    color: Theme.textMuted
                 }
-            }
-            AppButton {
-                text: "全部周次"
-                variant: "ghost"
-                visible: page.sched.week > 0
-                onClicked: page.sched.week = 0
+                FilterCombo {
+                    id: weekCombo
+                    Layout.preferredWidth: 150
+                    model: page.weekOptions
+                    currentIndex: page.sched.week
+                    onActivated: page.sched.week = currentIndex
+                }
             }
 
             Text {
@@ -140,7 +122,7 @@ Rectangle {
                 spacing: 14
                 visible: !page.narrow
                 Repeater {
-                    model: [{c: Theme.reminderReg, t: "报名开始提醒"}, {c: Theme.reminderEvt, t: "活动开始提醒"}]
+                    model: [{c: Theme.reminderReg, t: "报名"}, {c: Theme.reminderEvt, t: "活动"}, {c: Theme.memoColor, t: "备忘录"}]
                     delegate: Row {
                         required property var modelData
                         spacing: 6
@@ -158,9 +140,11 @@ Rectangle {
 
         ProgressBanner {
             Layout.fillWidth: true
-            message: page.importer.busy || page.importer.message !== "" ? page.importer.message
+            message: page.scraper.busy ? app.notice
+                     : (page.importer.busy || page.importer.message !== "" ? page.importer.message
                      : (page.sched.hasAnchor ? "" : "先点「设置日期」，告诉我任意一周的任意一天，就能显示每天的日期和活动提醒。")
-            running: page.importer.busy
+                       )
+            running: page.importer.busy || page.scraper.busy
             kind: !page.importer.busy && app.noticeKind === "error" && page.importer.message === app.notice ? "error" : "info"
         }
 
@@ -284,12 +268,49 @@ Rectangle {
                                 spacing: 5
                                 Repeater {
                                     model: cell.cards
-                                    delegate: CourseCard {
+                                    delegate: Row {
                                         required property var modelData
-                                        info: modelData
-                                        onClicked: detailDialog.openFor(modelData)
-                                        onRemoveRequested: removeDialog.askFor(modelData)
+                                        id: slotCard
+                                        width: cellColumn.width
+                                        spacing: 3
+                                        CourseCard {
+                                            width: parent.width - (marks.visible ? marks.width + 3 : 0)
+                                            info: slotCard.modelData
+                                            onClicked: slotDialog.openFor(cell.col, cell.block)
+                                            onRemoveRequested: removeDialog.askFor(slotCard.modelData)
+                                        }
+                                        Column {
+                                            id: marks
+                                            width: 26
+                                            spacing: 2
+                                            visible: !!slotCard.modelData.registrationCount || !!slotCard.modelData.eventCount || !!slotCard.modelData.hasMemo
+                                            BookmarkButton {
+                                                visible: !!slotCard.modelData.registrationCount
+                                                tint: Theme.reminderReg
+                                                text: "报名提醒（" + (slotCard.modelData.registrationCount || 0) + "）"
+                                                onClicked: slotDialog.openFor(cell.col, cell.block)
+                                            }
+                                            BookmarkButton {
+                                                visible: !!slotCard.modelData.eventCount
+                                                tint: Theme.reminderEvt
+                                                text: "活动提醒（" + (slotCard.modelData.eventCount || 0) + "）"
+                                                onClicked: slotDialog.openFor(cell.col, cell.block)
+                                            }
+                                            BookmarkButton {
+                                                visible: !!slotCard.modelData.hasMemo
+                                                tint: Theme.memoColor
+                                                text: "查看或编辑备忘录"
+                                                onClicked: slotDialog.openFor(cell.col, cell.block)
+                                            }
+                                        }
                                     }
+                                }
+                                AppButton {
+                                    width: parent.width
+                                    visible: cell.cards.length === 0 && page.sched.week > 0
+                                    text: "+ 备忘"
+                                    variant: "ghost"
+                                    onClicked: slotDialog.openFor(cell.col, cell.block)
                                 }
                             }
                         }
@@ -299,7 +320,7 @@ Rectangle {
 
             EmptyState {
                 anchors.centerIn: parent
-                visible: !page.sched.hasCourses
+                visible: !page.sched.hasCourses && page.sched.week === 0
                 icon: Theme.icon.calendar
                 title: "还没有课表"
                 subtitle: "先点「教务登录」登录教务系统，再点「一键导入课表」；也可以直接新增临时课程。"
@@ -322,6 +343,7 @@ Rectangle {
     DateDialog { id: dateDialog }
     CourseDialog { id: courseDialog }
     CourseDetailDialog { id: detailDialog }
+    SlotDialog { id: slotDialog }
 
     // ---- confirm delete -------------------------------------------------------------------
     Dialog {

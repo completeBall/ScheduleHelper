@@ -99,6 +99,7 @@ void ScheduleModel::save()
 void ScheduleModel::applyImport(Schedule imported)
 {
     imported.manualCourses = m_data.manualCourses;
+    imported.memos = m_data.memos;
     imported.weekOneMonday = m_data.weekOneMonday;
     imported.selectedWeek = m_data.selectedWeek;
     imported.importedAt = QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs);
@@ -126,7 +127,7 @@ QString ScheduleModel::dayDate(int day) const
     return full.mid(5).replace(QLatin1Char('-'), QLatin1Char('/'));
 }
 
-QVariantList ScheduleModel::cards(int day, int block) const
+QVariantList ScheduleModel::entries(int day, int block) const
 {
     QVariantList out;
     for (const Course &c : m_data.allCourses()) {
@@ -168,6 +169,54 @@ QVariantList ScheduleModel::cards(int day, int block) const
         }
     }
     return out;
+}
+
+QVariantList ScheduleModel::cards(int day, int block) const
+{
+    QVariantList out;
+    int registration = 0, event = 0;
+    for (const QVariant &entry : entries(day, block)) {
+        const QVariantMap item = entry.toMap();
+        const QString kind = item.value(QStringLiteral("kind")).toString();
+        if (kind == QLatin1String("course")) out << item;
+        else if (kind == QLatin1String("registration")) ++registration;
+        else if (kind == QLatin1String("event")) ++event;
+    }
+    const bool hasMemo = !memo(m_week, day, block).isEmpty();
+    if (out.isEmpty() && (registration || event || hasMemo))
+        out << QVariantMap{{QStringLiteral("kind"), QStringLiteral("empty")},
+                           {QStringLiteral("title"), QStringLiteral("空闲时段")},
+                           {QStringLiteral("detail"), QStringLiteral("点击查看提醒或备忘录")}};
+    // One set of bookmarks per time slot, even when multiple courses overlap.
+    if (!out.isEmpty()) {
+        QVariantMap first = out.first().toMap();
+        first[QStringLiteral("registrationCount")] = registration;
+        first[QStringLiteral("eventCount")] = event;
+        first[QStringLiteral("hasMemo")] = hasMemo;
+        out[0] = first;
+    }
+    return out;
+}
+
+QString ScheduleModel::memo(int week, int day, int block) const
+{
+    return m_data.memos.value(QStringLiteral("%1/%2/%3").arg(week).arg(day).arg(block)).toString();
+}
+
+QString ScheduleModel::setMemo(int week, int day, int block, const QString &text)
+{
+    if (week < 1 || week > 30 || day < 1 || day > 7 || block < 0 || block > 5)
+        return QStringLiteral("请先选择具体周次和有效时段。");
+    Schedule updated = m_data;
+    const QString key = QStringLiteral("%1/%2/%3").arg(week).arg(day).arg(block);
+    if (text.trimmed().isEmpty()) updated.memos.remove(key);
+    else updated.memos.insert(key, text.trimmed());
+    QString error;
+    if (!m_path.isEmpty() && !saveSchedule(m_path, updated, &error))
+        return QStringLiteral("备忘录保存失败：") + error;
+    m_data = updated;
+    changed();
+    return {};
 }
 
 QString ScheduleModel::dateOf(int week, int day) const

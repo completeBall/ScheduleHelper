@@ -1,6 +1,5 @@
 // DOM extraction helpers injected into the school / academic pages.
-// Lifted from extension/core.js and extension/timetable.js with all UI code removed;
-// the selectors and parsing rules are unchanged so real-page behaviour is identical.
+// DOM selectors and parsing rules used by the embedded school and academic pages.
 const Campus = (() => {
   const normalize = v => String(v ?? '').replace(/\s+/g, ' ').trim();
   const dateMatches = text => normalize(text).match(/\d{4}[/-]\d{1,2}[/-]\d{1,2}\s+\d{1,2}:\d{2}/g) || [];

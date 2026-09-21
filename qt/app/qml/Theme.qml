@@ -46,10 +46,11 @@ QtObject {
     readonly property color neutralSoft: dark ? "#263238" : "#eceff1"
 
     // reminder cards (timetable)
-    readonly property color reminderReg: dark ? "#f0a35a" : "#d97a1e"
+    readonly property color reminderReg: dark ? "#f5cc55" : "#e5b322"
     readonly property color reminderRegSoft: dark ? "#3a2a18" : "#fff3e4"
-    readonly property color reminderEvt: dark ? "#7fa1f0" : "#3f68c4"
-    readonly property color reminderEvtSoft: dark ? "#1b2842" : "#ecf2ff"
+    readonly property color reminderEvt: dark ? "#ff8686" : "#db5058"
+    readonly property color reminderEvtSoft: dark ? "#422328" : "#fff0f1"
+    readonly property color memoColor: dark ? "#6cd5a3" : "#279768"
 
     // five course colours: [background, accent]
     function course(i) {
