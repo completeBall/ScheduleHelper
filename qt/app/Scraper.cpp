@@ -213,11 +213,13 @@ QString Scraper::runCollection()
             if (index < 0 || index >= visible.size() || rowKey(visible[index]) != rowKey(row))
                 throw Failure{QStringLiteral("活动排序改变，请重新采集。")};
             m_bridge->eval(QStringLiteral("(()=>{document.querySelectorAll('.table-container .card-list-item')[%1].click();return true;})()").arg(index));
+            QString personal;
+            QString personalKey;
             try {
                 const QString rowJson = QString::fromUtf8(QJsonDocument(row.toJson()).toJson(QJsonDocument::Compact));
                 const QString expr = QStringLiteral(
                     "(()=>{if(!location.href.includes('/CloudPortal/CloudActivityDetail?'))return null;"
-                    "try{const r=Campus.extractDetail(document,%1,location.href);delete r.collectedAt;return r;}catch{return null;}})()")
+                    "try{const r=Campus.extractDetail(document,%1,location.href);r.personalRegistration=Campus.personalRegistration(document);delete r.collectedAt;return r;}catch{return null;}})()")
                                          .arg(rowJson);
                 QJsonObject detail = until(
                     expr, [](const QJsonObject &r) { return !r.value(QLatin1String("registration")).toString().isEmpty(); },
@@ -230,8 +232,11 @@ QString Scraper::runCollection()
                 const Activity a = Activity::fromJson(detail);
                 if (isIgnored(a))
                     ++excludedAtDetail;
-                else
+                else {
                     m_rows << a;
+                    personal = detail.value(QStringLiteral("personalRegistration")).toString();
+                    personalKey = ActivityModel::activityKey(a);
+                }
             } catch (const TimeoutFailure &e) {
                 row.error = e.message;
                 row.collectedAt = nowIso();
@@ -239,6 +244,8 @@ QString Scraper::runCollection()
             }
             m_done = i + 1;
             m_model->setRows(m_rows);
+            if (personal == QLatin1String("registered") || personal == QLatin1String("not_registered"))
+                m_model->setDetectedRegistration(personalKey, personal == QLatin1String("registered"));
             save();
             emit progressChanged();
             m_bridge->pause(350);

@@ -81,6 +81,7 @@ QVariant ActivityModel::data(const QModelIndex &index, int role) const
     case ErrorRole: return a.error;
     case KeyRole: return activityKey(a);
     case ClaimedRole: return isClaimed(a);
+    case AutoClaimedRole: return isAutoClaimed(a);
     }
     return {};
 }
@@ -93,7 +94,7 @@ QHash<int, QByteArray> ActivityModel::roleNames() const
         {ActivityTimeRole, "activityTime"}, {CapacityRole, "capacity"}, {RemainingRole, "remaining"},
         {RegisteredRole, "registered"}, {StatusRole, "status"},       {StatusKindRole, "statusKind"},
         {UrlRole, "url"},             {ErrorRole, "error"},
-        {KeyRole, "activityKey"},    {ClaimedRole, "claimed"},
+        {KeyRole, "activityKey"},    {ClaimedRole, "claimed"}, {AutoClaimedRole, "autoClaimed"},
     };
 }
 
@@ -110,12 +111,18 @@ void ActivityModel::setClaimedKeys(const QStringList &keys)
     rebuild();
 }
 
+void ActivityModel::setAutoClaimedKeys(const QStringList &keys)
+{
+    m_autoClaimed = QSet<QString>(keys.cbegin(), keys.cend());
+    rebuild();
+}
+
 void ActivityModel::setClaimedSnapshots(const QList<Activity> &snapshots)
 {
     m_claimedSnapshots.clear();
     for (const Activity &activity : snapshots) {
         const QString key = activityKey(activity);
-        if (m_claimed.contains(key)) m_claimedSnapshots.insert(key, activity);
+        if (isClaimedKey(key)) m_claimedSnapshots.insert(key, activity);
     }
     emit summaryChanged();
 }
@@ -126,7 +133,7 @@ QList<Activity> ActivityModel::reminderActivities() const
     QSet<QString> current;
     for (const Activity &activity : m_all) current.insert(activityKey(activity));
     for (auto it = m_claimedSnapshots.cbegin(); it != m_claimedSnapshots.cend(); ++it)
-        if (m_claimed.contains(it.key()) && !current.contains(it.key())) result << it.value();
+        if (isClaimedKey(it.key()) && !current.contains(it.key())) result << it.value();
     return result;
 }
 
@@ -140,7 +147,23 @@ void ActivityModel::setClaimed(const QString &key, bool claimed)
             if (activityKey(activity) == key) { m_claimedSnapshots.insert(key, activity); break; }
     } else {
         m_claimed.remove(key);
-        m_claimedSnapshots.remove(key);
+        if (!isClaimedKey(key)) m_claimedSnapshots.remove(key);
+    }
+    rebuild();
+    emit claimedChanged();
+}
+
+void ActivityModel::setDetectedRegistration(const QString &key, bool registered)
+{
+    if (key.isEmpty() || m_autoClaimed.contains(key) == registered)
+        return;
+    if (registered) {
+        m_autoClaimed.insert(key);
+        for (const Activity &activity : m_all)
+            if (activityKey(activity) == key) { m_claimedSnapshots.insert(key, activity); break; }
+    } else {
+        m_autoClaimed.remove(key);
+        if (!isClaimedKey(key)) m_claimedSnapshots.remove(key);
     }
     rebuild();
     emit claimedChanged();
@@ -151,7 +174,7 @@ void ActivityModel::setRows(QList<Activity> rows)
     m_all = std::move(rows);
     for (const Activity &activity : m_all) {
         const QString key = activityKey(activity);
-        if (m_claimed.contains(key)) m_claimedSnapshots.insert(key, activity);
+        if (isClaimedKey(key)) m_claimedSnapshots.insert(key, activity);
     }
     QStringList types;
     for (const Activity &a : std::as_const(m_all))

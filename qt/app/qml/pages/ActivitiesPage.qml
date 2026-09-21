@@ -325,6 +325,7 @@ Rectangle {
                     required property string error
                     required property string activityKey
                     required property bool claimed
+                    required property bool autoClaimed
 
                     width: ListView.view.width
                     height: Math.max(68, rowLayout.implicitHeight + 24)
@@ -456,7 +457,8 @@ Rectangle {
                                 text: row.status
                             }
                             Button {
-                                text: row.claimed ? "✓ 已抢到" : "标记已抢到"
+                                text: row.autoClaimed ? "✓ 已报名" : (row.claimed ? "✓ 已抢到" : "标记已抢到")
+                                enabled: !row.autoClaimed
                                 implicitHeight: 28
                                 font.pixelSize: 12
                                 onClicked: page.acts.setClaimed(row.activityKey, !row.claimed)

@@ -67,6 +67,7 @@ AppController::AppController(const AppOptions &options, QObject *parent)
     m_desktopReminders = settings.value(QStringLiteral("desktopReminders"), true).toBool();
     m_lastCollection = QDateTime::fromString(settings.value(QStringLiteral("lastCollection")).toString(), Qt::ISODateWithMs);
     m_activities->setClaimedKeys(settings.value(QStringLiteral("claimedActivities")).toStringList());
+    m_activities->setAutoClaimedKeys(settings.value(QStringLiteral("autoClaimedActivities")).toStringList());
     QList<Activity> claimedSnapshots;
     for (const QJsonValue &value : QJsonDocument::fromJson(settings.value(QStringLiteral("claimedSnapshots")).toByteArray()).array())
         claimedSnapshots << Activity::fromJson(value.toObject());
@@ -135,6 +136,7 @@ AppController::AppController(const AppOptions &options, QObject *parent)
         if (!m_options.testing) {
             QSettings settings(m_dataDir + QStringLiteral("/settings.ini"), QSettings::IniFormat);
             settings.setValue(QStringLiteral("claimedActivities"), m_activities->claimedKeys());
+            settings.setValue(QStringLiteral("autoClaimedActivities"), m_activities->autoClaimedKeys());
             QJsonArray saved;
             for (const Activity &activity : m_activities->claimedSnapshots()) saved.append(activity.toJson());
             settings.setValue(QStringLiteral("claimedSnapshots"), QJsonDocument(saved).toJson(QJsonDocument::Compact));

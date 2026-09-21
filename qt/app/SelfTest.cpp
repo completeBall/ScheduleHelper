@@ -245,8 +245,9 @@ void runSelfTest(AppController &app, QQuickWindow *window)
                     eventCards += m.value(QStringLiteral("kind")) == QLatin1String("event");
                     hasDeadline |= m.value(QStringLiteral("detail")).toString().contains(QStringLiteral("报名截止："));
                 }
+        require(app.activities()->isAutoClaimed(rows.last()), QStringLiteral("未自动识别个人已报名状态"));
         require(schedule->dayDate(3) == QLatin1String("09/23") && schedule->summary().contains(QStringLiteral("3 条"))
-                    && schedule->summary().contains(QStringLiteral("提醒")) && registrationCards >= 1 && eventCards == 0
+                    && schedule->summary().contains(QStringLiteral("提醒")) && registrationCards >= 1 && eventCards >= 1
                     && !hasDeadline && schedule->data().manualCourses.size() == 1,
                 QStringLiteral("日期、报名提醒或手动课程测试失败：") + schedule->summary());
         app.activities()->setClaimed(ActivityModel::activityKey(rows.first()), true);

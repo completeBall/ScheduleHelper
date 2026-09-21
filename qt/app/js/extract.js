@@ -20,7 +20,28 @@ const Campus = (() => {
     return {...row, registration: fields['活动报名时间'], place: fields['活动场地'] && fields['活动场地'] !== '--' ? fields['活动场地'] : row.place,
       capacity: m[2] || '不限', remaining, registered: m[1], organizer: fields['活动发起组织'], type: fields['活动类型'], url, collectedAt: new Date().toISOString()};
   }
-  return {normalize, extractCards, extractDetail};
+  // Only account-specific controls or fields can establish personal registration.
+  // In particular, "123人已报名" is an aggregate count, never a personal status.
+  function personalRegistration(doc) {
+    const yes = /^(?:已报名|报名成功|已预约|预约成功|审核通过|取消报名|取消预约)$/;
+    const no = /^(?:未报名|未预约|报名失败|报名已取消|已取消报名|立即报名|我要报名|报名|立即预约)$/;
+    const fields = [...doc.querySelectorAll('.main-item')];
+    for (const item of fields) {
+      const label = normalize(item.querySelector('.main-title')?.textContent);
+      if (!/^(?:我的|个人|本人)(?:活动)?(?:报名|预约)(?:状态|结果)?$/.test(label) && !/^(?:报名|预约)(?:状态|结果)$/.test(label)) continue;
+      const value = normalize(item.querySelector('.main-value')?.textContent);
+      if (yes.test(value)) return 'registered';
+      if (no.test(value)) return 'not_registered';
+    }
+    for (const el of doc.querySelectorAll('button, [role="button"], .el-button')) {
+      if (!el.getClientRects().length) continue;
+      const label = normalize(el.textContent);
+      if (yes.test(label)) return 'registered';
+      if (no.test(label)) return 'not_registered';
+    }
+    return 'unknown';
+  }
+  return {normalize, extractCards, extractDetail, personalRegistration};
 })();
 
 const GdipuTimetable = (() => {

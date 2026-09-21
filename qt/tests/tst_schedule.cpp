@@ -72,6 +72,33 @@ private slots:
         QVERIFY(!model.setMemo(1, 1, 0, "replacement").isEmpty());
         QCOMPARE(model.memo(1, 1, 0), QString("original"));
     }
+    void detectedRegistrationChangesBookmarks() {
+        ActivityModel activities;
+        ScheduleModel model(&activities);
+        QVERIFY(model.setAnchor(3, 1, "2026-09-21").isEmpty());
+        Campus::Activity a;
+        a.name = QStringLiteral("报名活动");
+        a.registration = "2026/09/21 08:45 - 2026/09/21 09:00";
+        a.activityTime = "2026/09/21 09:00 - 2026/09/21 09:30";
+        activities.setRows({a});
+        const QString key = ActivityModel::activityKey(a);
+        QCOMPARE(model.cards(1, 0)[0].toMap()["registrationCount"].toInt(), 1);
+        activities.setDetectedRegistration(key, true);
+        QCOMPARE(model.cards(1, 0)[0].toMap()["registrationCount"].toInt(), 0);
+        QCOMPARE(model.cards(1, 0)[0].toMap()["eventCount"].toInt(), 1);
+        ActivityModel restored;
+        restored.setAutoClaimedKeys(activities.autoClaimedKeys());
+        restored.setClaimedSnapshots(activities.claimedSnapshots());
+        QVERIFY(restored.isClaimed(a));
+        QCOMPARE(restored.reminderActivities().size(), 1);
+        activities.setDetectedRegistration(key, false);
+        QCOMPARE(model.cards(1, 0)[0].toMap()["registrationCount"].toInt(), 1);
+        QCOMPARE(model.cards(1, 0)[0].toMap()["eventCount"].toInt(), 0);
+        activities.setClaimed(key, true);
+        activities.setDetectedRegistration(key, true);
+        activities.setDetectedRegistration(key, false);
+        QVERIFY(activities.isClaimed(a)); // a failed or cancelled auto check must preserve a manual mark
+    }
 };
 QTEST_GUILESS_MAIN(ScheduleTests)
 #include "tst_schedule.moc"

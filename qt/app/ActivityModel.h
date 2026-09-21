@@ -43,6 +43,7 @@ public:
         ErrorRole,
         KeyRole,
         ClaimedRole,
+        AutoClaimedRole,
     };
 
     explicit ActivityModel(QObject *parent = nullptr);
@@ -53,13 +54,17 @@ public:
 
     void setRows(QList<Activity> rows);
     static QString activityKey(const Activity &activity);
-    bool isClaimed(const Activity &activity) const { return m_claimed.contains(activityKey(activity)); }
+    bool isClaimed(const Activity &activity) const { return isClaimedKey(activityKey(activity)); }
+    bool isAutoClaimed(const Activity &activity) const { return m_autoClaimed.contains(activityKey(activity)); }
     void setClaimedKeys(const QStringList &keys);
     QStringList claimedKeys() const { return m_claimed.values(); }
+    void setAutoClaimedKeys(const QStringList &keys);
+    QStringList autoClaimedKeys() const { return m_autoClaimed.values(); }
     void setClaimedSnapshots(const QList<Activity> &snapshots);
     QList<Activity> claimedSnapshots() const { return m_claimedSnapshots.values(); }
     QList<Activity> reminderActivities() const;
     Q_INVOKABLE void setClaimed(const QString &key, bool claimed);
+    void setDetectedRegistration(const QString &key, bool registered);
     const QList<Activity> &all() const { return m_all; }
     QList<Activity> displayed() const { return m_shown; }
 
@@ -91,6 +96,7 @@ private:
     void rebuild();
     QString statusOf(const Activity &a) const;
     static QString statusKind(const QString &status);
+    bool isClaimedKey(const QString &key) const { return m_claimed.contains(key) || m_autoClaimed.contains(key); }
 
     QList<Activity> m_all;
     QList<Activity> m_shown;
@@ -105,5 +111,6 @@ private:
     QString m_signature;
     QTimer m_tick;
     QSet<QString> m_claimed;
+    QSet<QString> m_autoClaimed;
     QHash<QString, Activity> m_claimedSnapshots;
 };
