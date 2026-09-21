@@ -3,6 +3,7 @@ find_package(Qt6 6.8 REQUIRED COMPONENTS Quick QuickControls2 QuickDialogs2 WebE
 qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(GdipuActivityHelper WIN32
+    app.rc
     main.cpp
     AppController.cpp
     ActivityModel.cpp
@@ -44,6 +45,8 @@ qt_add_qml_module(GdipuActivityHelper
         qml/pages/CourseDetailDialog.qml
         qml/pages/SlotDialog.qml
         qml/components/BookmarkButton.qml
+    RESOURCES
+        assets/app-logo.png
 )
 
 qt_add_resources(GdipuActivityHelper scripts

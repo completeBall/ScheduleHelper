@@ -63,14 +63,15 @@ ApplicationWindow {
                         Layout.maximumWidth: 40
                         Layout.preferredHeight: 40
                         radius: 12
-                        color: "#1fb3a5"
-                        Text {
-                            anchors.centerIn: parent
-                            text: "广"
-                            font.family: Theme.fontUi
-                            font.pixelSize: 22
-                            font.weight: Font.Bold
-                            color: "#06302d"
+                        color: "white"
+                        clip: true
+                        Image {
+                            anchors.fill: parent
+                            anchors.margins: 5
+                            source: "qrc:/qt/qml/Gdipu/assets/app-logo.png"
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            mipmap: true
                         }
                     }
                     ColumnLayout {

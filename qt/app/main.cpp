@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QFont>
 #include <QGuiApplication>
+#include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
@@ -21,6 +22,7 @@ int main(int argc, char *argv[])
     app.setApplicationName(QStringLiteral("广轻活动汇总"));
     app.setOrganizationName(QStringLiteral("GdipuActivityHelper"));
     app.setApplicationVersion(QStringLiteral("2.0.0"));
+    app.setWindowIcon(QIcon(QStringLiteral(":/qt/qml/Gdipu/assets/app-logo.png")));
 
     QCommandLineParser parser;
     parser.addHelpOption();
