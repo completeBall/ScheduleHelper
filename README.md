@@ -12,7 +12,38 @@ Windows 64 位成品程序位于 [`release/广轻活动汇总-第一版.exe`](re
 - 从教务系统一键导入课表，支持日期补全和手动添加临时调课。
 - 在课表中分别显示橙色报名提醒卡和蓝色活动开始提醒卡。
 
-## Windows 桌面版源码
+## Qt 版（C++17 / Qt 6.8 · Qt Quick + Qt WebEngine）
+
+`qt/` 是用 C++ 与 Qt 重写的新版本，功能与下面的 C# 版一致，界面重新设计（统一的侧栏外壳、浅色/深色主题、指标卡、可筛选的活动列表、自适应课表网格、表单对话框）。
+
+```
+qt/src/core/     纯 C++ 逻辑，无 UI：活动状态与排序、周次/节次解析、日期推算、提醒映射、JSON 存取、XLSX 导出
+qt/app/          应用：QML 界面（qml/）、模型、采集状态机 Scraper、课表导入 ScheduleImporter、WebBridge
+qt/app/js/       注入学校页面的 DOM 抽取脚本（从 extension/*.js 剥离，选择器与解析规则不变）
+qt/tests/        Qt Test：移植自 tests/*.test.mjs 的用例
+```
+
+数据目录与 JSON 格式沿用 C# 版（`%LOCALAPPDATA%\GdipuActivityHelper` 下的 `last-results.json`、`timetable.json`），已有数据可直接读取。浏览器登录状态使用新的 `BrowserProfileQt`，首次需要重新登录一次。
+
+环境：Visual Studio 2022+（MSVC 14.44）、Qt 6.8.3 `msvc2022_64`（含 QtDeclarative、QtWebEngine、QtWebChannel、QtPositioning、QtShaderTools、QtSvg）。路径写在 `qt/build.cmd`，按本机修改。
+
+```
+qt\build.cmd            配置并编译；build.cmd test 额外运行单元测试；build.cmd noapp 只编译核心库与测试
+qt\run.cmd              开发时运行（临时把 Qt 加入 PATH）
+qt\deploy.cmd           编译并打包到 qt\dist\GdipuActivityHelper（约 210 MB，zip 后约 95 MB，其中 Chromium 内核占大头）
+```
+
+端到端自检：先 `node server.mjs` 启动模拟学校网站，再运行
+
+```
+qt\run.cmd --self-test <输出目录>          可选 --schedule-fixture <真实教务页面URL>
+```
+
+自检会驱动真实界面与内置浏览器完成：采集（团日/班会/班级活动被排除、同名活动保留）、XLSX 导出、课表导入、单双周、手动课程、双类型提醒卡片、空课表/登录失效不覆盖旧课表，并写出 `result.json` 与 `self-test.log`，退出码表示是否通过。`--screenshot <目录> --demo activities.json [--theme light|dark]` 可对各页面和对话框截图（不读写真实数据）。
+
+与 C# 版的差异：Excel 中读取失败的活动现在显示“读取失败”（原先误显示为“时间待确认”）；所有时间判断固定按北京时间（UTC+8），不再依赖本机时区。
+
+## Windows 桌面版源码（C#，原版）
 
 入口：desktop/Launcher.cs；窗口、登录和采集：desktop/App.cs；Excel 导出：desktop/ExcelExport.cs；表格和字段解析：extension/core.js。
 

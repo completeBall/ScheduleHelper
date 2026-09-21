@@ -1,8 +1,40 @@
+# ---- C# 版（desktop/）构建产物 ----
 desktop/build/
 desktop/vendor/
+
+# ---- Qt 版（qt/）构建与打包产物 ----
+qt/build/
+qt/dist/
+build/
 dist/
+CMakeUserPresets.json
+CMakeLists.txt.user
+*.qmlc
+*.jsc
+
+# ---- 测试与自检产物 ----
 tests/*-final*/
 tests/*-preview.png
 tests/*.xlsx
+self-test.log
+result.json
+
+# ---- 工具与编辑器 ----
+.vs/
+.vscode/
+.idea/
 *.user
+*.autosave
+*.obj
+*.pdb
+*.ilk
+node_modules/
+
+# ---- 日志、临时文件、系统文件 ----
+*.log
 *.log.tmp
+*.tmp
+aqtinstall.log
+Thumbs.db
+desktop.ini
+.DS_Store
